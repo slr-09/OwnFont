@@ -113,6 +113,10 @@ final class CharacterWritingView: UIView {
     // MARK: - Canvas
     let canvasView = CharacterCanvasView()
 
+    // 캔버스 상하 여백을 균등하게 분배하기 위한 스페이서
+    private let topCanvasSpacer = UIView()
+    private let bottomCanvasSpacer = UIView()
+
     // MARK: - Tool Bar
     private let toolBarView: UIView = {
         let v = UIView()
@@ -176,7 +180,9 @@ final class CharacterWritingView: UIView {
         currentCharRow.addArrangedSubview(currentCharBigLabel)
         addSubview(currentCharRow)
 
+        addSubview(topCanvasSpacer)
         addSubview(canvasView)
+        addSubview(bottomCanvasSpacer)
 
         addSubview(toolBarView)
         let toolsStack = UIStackView(arrangedSubviews: [penButton, eraserButton, undoButton, clearButton])
@@ -226,10 +232,6 @@ final class CharacterWritingView: UIView {
             make.centerX.equalToSuperview()
         }
 
-        toolBarView.snp.makeConstraints { make in
-            make.horizontalEdges.equalToSuperview()
-            make.top.equalTo(canvasView.snp.bottom).offset(16)
-        }
         toolsStack.snp.makeConstraints { make in
             make.leading.equalToSuperview().inset(20)
             make.verticalEdges.equalToSuperview().inset(16)
@@ -242,10 +244,42 @@ final class CharacterWritingView: UIView {
             make.centerY.equalToSuperview()
         }
 
-        canvasView.snp.makeConstraints { make in
-            make.horizontalEdges.equalToSuperview().inset(100) // 캔버스 작게 조절 (에디터 글자 크기 키우기 위함)
-            make.top.equalTo(currentCharRow.snp.bottom).offset(16)
-            make.height.equalTo(canvasView.snp.width)   // 정사각형 비율 유지
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            // iPad: 툴바 하단 고정, 캔버스는 남은 공간에서 상하 균등 배치
+            toolBarView.snp.makeConstraints { make in
+                make.horizontalEdges.equalToSuperview()
+                make.bottom.equalTo(safeAreaLayoutGuide.snp.bottom)
+            }
+            topCanvasSpacer.snp.makeConstraints { make in
+                make.top.equalTo(currentCharRow.snp.bottom)
+                make.bottom.equalTo(canvasView.snp.top)
+                make.horizontalEdges.equalToSuperview()
+                make.height.greaterThanOrEqualTo(8)
+            }
+            canvasView.snp.makeConstraints { make in
+                make.centerX.equalToSuperview()
+                make.width.lessThanOrEqualTo(220)
+                make.width.equalToSuperview().inset(100).priority(.high)
+                make.height.equalTo(canvasView.snp.width)
+            }
+            bottomCanvasSpacer.snp.makeConstraints { make in
+                make.top.equalTo(canvasView.snp.bottom)
+                make.bottom.equalTo(toolBarView.snp.top)
+                make.horizontalEdges.equalToSuperview()
+                make.height.greaterThanOrEqualTo(8)
+                make.height.equalTo(topCanvasSpacer)
+            }
+        } else {
+            // iPhone: 캔버스 바로 아래에 툴바 배치 (기존 동작)
+            canvasView.snp.makeConstraints { make in
+                make.horizontalEdges.equalToSuperview().inset(100)
+                make.top.equalTo(currentCharRow.snp.bottom).offset(16)
+                make.height.equalTo(canvasView.snp.width)
+            }
+            toolBarView.snp.makeConstraints { make in
+                make.horizontalEdges.equalToSuperview()
+                make.top.equalTo(canvasView.snp.bottom).offset(16)
+            }
         }
     }
 
