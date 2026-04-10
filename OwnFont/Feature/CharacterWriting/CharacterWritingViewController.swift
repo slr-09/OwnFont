@@ -130,12 +130,14 @@ final class CharacterWritingViewController: UIViewController {
         contentView.scrollToSlot(at: currentIndex)
     }
 
-    /// CGPath + PKDrawing 모두 저장
+    /// CGPath + PKDrawing 모두 저장 (변경 없으면 스킵)
     private func saveCurrentGlyph() {
         let drawing = contentView.canvasView.drawing
         guard !drawing.strokes.isEmpty else { return }
 
         let character = category.characters[currentIndex]
+        if let saved = GlyphStore.shared.loadDrawing(for: character), saved == drawing { return }
+
         let canvasSize = contentView.canvasView.bounds.size
 
         let rawPath = DrawingPathExtractor.extract(from: drawing)
