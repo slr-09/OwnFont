@@ -8,9 +8,14 @@ import SnapKit
 
 final class CharacterWritingView: UIView {
 
+    // MARK: - Types
+    enum NextButtonMode { case next, done, save }
+
     // MARK: - Callbacks
     var onBackTap: (() -> Void)?
     var onNextTap: (() -> Void)?
+    var onDoneTap: (() -> Void)?
+    var onSaveTap: (() -> Void)?
     var onPenTap: (() -> Void)?
     var onEraserTap: (() -> Void)?
     var onUndoTap: (() -> Void)?
@@ -79,6 +84,7 @@ final class CharacterWritingView: UIView {
     }()
 
     private var charSlotButtons: [UIButton] = []
+    private var nextButtonMode: NextButtonMode = .next
 
     // MARK: - Current Char
     private let currentCharRow: UIStackView = {
@@ -257,7 +263,13 @@ final class CharacterWritingView: UIView {
     @objc private func handleEraser() { onEraserTap?() }
     @objc private func handleUndo()   { onUndoTap?() }
     @objc private func handleClear()  { onClearTap?() }
-    @objc private func handleNext()   { onNextTap?() }
+    @objc private func handleNext() {
+        switch nextButtonMode {
+        case .next: onNextTap?()
+        case .done: onDoneTap?()
+        case .save: onSaveTap?()
+        }
+    }
     @objc private func slotTapped(_ sender: UIButton) { onSlotTap?(sender.tag) }
 
     // MARK: - Public Interface
@@ -280,11 +292,20 @@ final class CharacterWritingView: UIView {
 
     func updateSlots(currentIndex: Int, completedIndices: Set<Int>) {
         charSlotButtons.enumerated().forEach { index, btn in
-            if completedIndices.contains(index) {
+            let isCompleted = completedIndices.contains(index)
+            let isCurrent   = index == currentIndex
+
+            if isCompleted && isCurrent {
+                // 완성된 글자 수정 중: 색 반전(흰 배경 + primary 텍스트)으로 구분
+                btn.backgroundColor = .surface
+                btn.setTitleColor(.primary, for: .normal)
+                btn.layer.borderWidth = 1.5
+                btn.layer.borderColor = UIColor.primary.cgColor
+            } else if isCompleted {
                 btn.backgroundColor = .primary
                 btn.setTitleColor(.white, for: .normal)
                 btn.layer.borderWidth = 0
-            } else if index == currentIndex {
+            } else if isCurrent {
                 btn.backgroundColor = .amberLight
                 btn.setTitleColor(.amberDark, for: .normal)
                 btn.layer.borderWidth = 1.5
@@ -293,6 +314,7 @@ final class CharacterWritingView: UIView {
                 btn.backgroundColor = .surfaceSecondary
                 btn.setTitleColor(.borderLight, for: .normal)
                 btn.layer.borderWidth = 0
+                btn.layer.borderColor = UIColor.amberBorder.cgColor  // amber 상태에서 전환 시 carryover 방지
             }
         }
     }
@@ -313,6 +335,28 @@ final class CharacterWritingView: UIView {
         let btnFrame = charStackView.convert(btn.frame, to: charScrollView)
         let targetX = max(0, btnFrame.midX - charScrollView.bounds.width / 2)
         charScrollView.setContentOffset(CGPoint(x: targetX, y: 0), animated: true)
+    }
+
+    func updateNextButton(mode: NextButtonMode) {
+        nextButtonMode = mode
+        var config = nextButton.configuration ?? UIButton.Configuration.plain()
+        let titleAttrs = AttributeContainer([
+            .font: UIFont.systemFont(ofSize: 15, weight: .bold),
+            .foregroundColor: UIColor.white
+        ])
+        let symCfg = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
+        switch mode {
+        case .next:
+            config.attributedTitle = AttributedString("다음 글자", attributes: titleAttrs)
+            config.image = UIImage(systemName: "chevron.right", withConfiguration: symCfg)
+        case .done:
+            config.attributedTitle = AttributedString("완료", attributes: titleAttrs)
+            config.image = UIImage(systemName: "checkmark", withConfiguration: symCfg)
+        case .save:
+            config.attributedTitle = AttributedString("저장", attributes: titleAttrs)
+            config.image = UIImage(systemName: "square.and.arrow.down", withConfiguration: symCfg)
+        }
+        nextButton.configuration = config
     }
 
     func setActiveTool(isPen: Bool) {

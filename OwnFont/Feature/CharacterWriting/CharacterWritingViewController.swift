@@ -70,6 +70,13 @@ final class CharacterWritingViewController: UIViewController {
         contentView.onNextTap = { [weak self] in
             self?.advanceToNextChar()
         }
+        contentView.onDoneTap = { [weak self] in
+            self?.saveCurrentGlyph()
+            self?.navigationController?.popViewController(animated: true)
+        }
+        contentView.onSaveTap = { [weak self] in
+            self?.saveAndCycleToNext()
+        }
         contentView.onSlotTap = { [weak self] index in
             self?.navigateTo(index: index)
         }
@@ -89,6 +96,16 @@ final class CharacterWritingViewController: UIViewController {
     }
 
     // MARK: - Logic
+    /// 수정 모드: 현재 글자 저장 후 다음 슬롯으로 순환 이동 (화면 유지)
+    private func saveAndCycleToNext() {
+        saveCurrentGlyph()
+        let total = category.characters.count
+        guard total > 1 else { return }
+        currentIndex = (currentIndex + 1) % total
+        refreshUI()
+        contentView.scrollToSlot(at: currentIndex)
+    }
+
     private func advanceToNextChar() {
         let total = category.characters.count
         guard currentIndex < total else { return }
@@ -137,6 +154,18 @@ final class CharacterWritingViewController: UIViewController {
         contentView.updateCurrentChar(chars[currentIndex])
         contentView.updateCounter(current: currentIndex + 1, total: category.totalCount)
         contentView.updateSlots(currentIndex: currentIndex, completedIndices: completedIndices)
+
+        let isAlreadyCompleted = completedIndices.contains(currentIndex)
+        let hasMoreUncompleted = chars.indices.contains(where: { !completedIndices.contains($0) && $0 != currentIndex })
+        let mode: CharacterWritingView.NextButtonMode
+        if isAlreadyCompleted {
+            mode = .save                          // 이미 완성된 글자 수정 중
+        } else if !hasMoreUncompleted {
+            mode = .done                          // 마지막 미완성 글자
+        } else {
+            mode = .next                          // 미완성 글자가 더 있음
+        }
+        contentView.updateNextButton(mode: mode)
 
         // 저장된 드로잉 복원, 없으면 캔버스 초기화
         let character = chars[currentIndex]
