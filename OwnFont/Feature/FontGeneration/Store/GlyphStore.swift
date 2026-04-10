@@ -5,9 +5,10 @@
 
 import CoreData
 import CoreGraphics
+import PencilKit
 import UIKit
 
-/// 글리프 데이터 저장소 — CoreData 기반
+/// 글리프 데이터 저장소 — CoreData(CGPath) + 파일(PKDrawing)
 final class GlyphStore {
 
     static let shared = GlyphStore()
@@ -44,6 +45,28 @@ final class GlyphStore {
                 dict[entity.character] = glyph
             }
         }
+    }
+
+    // MARK: - PKDrawing (파일 기반)
+
+    /// PKDrawing을 Documents 폴더에 바이너리 파일로 저장
+    func saveDrawing(_ drawing: PKDrawing, for character: String) {
+        let data = drawing.dataRepresentation()
+        try? data.write(to: drawingURL(for: character), options: .atomic)
+    }
+
+    /// 저장된 PKDrawing 복원 (없으면 nil)
+    func loadDrawing(for character: String) -> PKDrawing? {
+        guard let data = try? Data(contentsOf: drawingURL(for: character)) else { return nil }
+        return try? PKDrawing(data: data)
+    }
+
+    private func drawingURL(for character: String) -> URL {
+        // 유니코드 코드포인트로 파일명 생성 (특수문자 안전 처리)
+        let safe = character.unicodeScalars.map { "U\($0.value)" }.joined()
+        return FileManager.default
+            .urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("drawing_\(safe).bin")
     }
 
     // MARK: - Private

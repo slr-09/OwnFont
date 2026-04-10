@@ -36,8 +36,9 @@ final class CharacterWritingViewController: UIViewController {
         super.viewDidLoad()
         bindCallbacks()
         contentView.setupCharSlots(characters: category.characters)
+        contentView.canvasView.usePen()
+        restoreCompletedIndices()
         refreshUI()
-        setupPencilKit()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -69,11 +70,22 @@ final class CharacterWritingViewController: UIViewController {
         contentView.onNextTap = { [weak self] in
             self?.advanceToNextChar()
         }
+        contentView.onSlotTap = { [weak self] index in
+            self?.navigateTo(index: index)
+        }
     }
 
-    // MARK: - PencilKit
-    private func setupPencilKit() {
-        contentView.canvasView.usePen()
+    // MARK: - Restore
+    /// GlyphStore에 저장된 문자를 completedIndices에 반영하고
+    /// currentIndex를 첫 번째 미완성 문자로 설정
+    private func restoreCompletedIndices() {
+        let chars = category.characters
+        completedIndices = Set(
+            chars.indices.filter { GlyphStore.shared.hasGlyph(for: chars[$0]) }
+        )
+        if let first = chars.indices.first(where: { !completedIndices.contains($0) }) {
+            currentIndex = first
+        }
     }
 
     // MARK: - Logic
@@ -88,12 +100,20 @@ final class CharacterWritingViewController: UIViewController {
             currentIndex = next
         }
 
-        contentView.canvasView.clearDrawing()
         refreshUI()
         contentView.scrollToSlot(at: currentIndex)
     }
 
-    /// 현재 글자의 손글씨를 CGPath로 변환해 GlyphStore에 저장하고 미리보기를 표시
+    /// 슬롯 탭 → 현재 글자 저장 후 해당 인덱스로 이동
+    private func navigateTo(index: Int) {
+        guard index != currentIndex, index < category.characters.count else { return }
+        saveCurrentGlyph()
+        currentIndex = index
+        refreshUI()
+        contentView.scrollToSlot(at: currentIndex)
+    }
+
+    /// CGPath + PKDrawing 모두 저장
     private func saveCurrentGlyph() {
         let drawing = contentView.canvasView.drawing
         guard !drawing.strokes.isEmpty else { return }
@@ -103,18 +123,11 @@ final class CharacterWritingViewController: UIViewController {
 
         let rawPath = DrawingPathExtractor.extract(from: drawing)
         let normalizedPath = GlyphNormalizer.normalize(rawPath, canvasSize: canvasSize)
-        
+
         GlyphStore.shared.save(
             GlyphData(character: character, normalizedPath: normalizedPath, createdAt: Date())
         )
-
-        // 복원 검증
-        if let restored = GlyphStore.shared.glyph(for: character) {
-            let box = restored.normalizedPath.boundingBoxOfPath
-            print("복원 성공: \(character), boundingBox: \(box)")
-        } else {
-            print("복원 실패: \(character)")
-        }
+        GlyphStore.shared.saveDrawing(drawing, for: character)
     }
 
     private func refreshUI() {
@@ -124,5 +137,13 @@ final class CharacterWritingViewController: UIViewController {
         contentView.updateCurrentChar(chars[currentIndex])
         contentView.updateCounter(current: currentIndex + 1, total: category.totalCount)
         contentView.updateSlots(currentIndex: currentIndex, completedIndices: completedIndices)
+
+        // 저장된 드로잉 복원, 없으면 캔버스 초기화
+        let character = chars[currentIndex]
+        if let saved = GlyphStore.shared.loadDrawing(for: character) {
+            contentView.canvasView.drawing = saved
+        } else {
+            contentView.canvasView.clearDrawing()
+        }
     }
 }

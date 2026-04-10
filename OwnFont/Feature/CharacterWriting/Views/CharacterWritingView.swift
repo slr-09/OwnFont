@@ -15,6 +15,7 @@ final class CharacterWritingView: UIView {
     var onEraserTap: (() -> Void)?
     var onUndoTap: (() -> Void)?
     var onClearTap: (() -> Void)?
+    var onSlotTap: ((Int) -> Void)?
 
     // MARK: - Nav Bar
     private let navBarView: UIView = {
@@ -257,6 +258,7 @@ final class CharacterWritingView: UIView {
     @objc private func handleUndo()   { onUndoTap?() }
     @objc private func handleClear()  { onClearTap?() }
     @objc private func handleNext()   { onNextTap?() }
+    @objc private func slotTapped(_ sender: UIButton) { onSlotTap?(sender.tag) }
 
     // MARK: - Public Interface
     func setupCharSlots(characters: [String]) {
@@ -269,6 +271,7 @@ final class CharacterWritingView: UIView {
             btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
             btn.layer.cornerRadius = 10
             btn.tag = index
+            btn.addTarget(self, action: #selector(slotTapped(_:)), for: .touchUpInside)
             btn.snp.makeConstraints { make in make.size.equalTo(36) }
             charStackView.addArrangedSubview(btn)
             charSlotButtons.append(btn)
