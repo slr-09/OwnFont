@@ -80,6 +80,14 @@ final class CategoryCardView: UIView {
         let view = UIView()
         view.backgroundColor = .surfaceSecondary
         view.layer.cornerRadius = 3
+        view.clipsToBounds = true
+        return view
+    }()
+
+    private let progressBarFill: UIView = {
+        let view = UIView()
+        view.backgroundColor = .primary
+        view.layer.cornerRadius = 3
         return view
     }()
 
@@ -135,6 +143,7 @@ final class CategoryCardView: UIView {
 
         // Progress bar
         addSubview(progressBarBg)
+        progressBarBg.addSubview(progressBarFill)
 
         topRowStackView.snp.makeConstraints { make in
             make.top.horizontalEdges.equalToSuperview().inset(16)
@@ -145,6 +154,10 @@ final class CategoryCardView: UIView {
             make.bottom.equalToSuperview().inset(16)
             make.height.equalTo(6)
         }
+        progressBarFill.snp.makeConstraints { make in
+            make.leading.top.bottom.equalToSuperview()
+            make.width.equalToSuperview().multipliedBy(0)
+        }
     }
 
     func configure(with category: CharacterCategory, completedCount: Int) {
@@ -153,5 +166,33 @@ final class CategoryCardView: UIView {
         iconImageView.image = UIImage(systemName: category.iconName)
         iconImageView.tintColor = category.iconColor
         iconContainer.backgroundColor = category.iconBgColor
+
+        let total = category.totalCount
+        let ratio = total > 0 ? CGFloat(completedCount) / CGFloat(total) : 0
+
+        // 프로그레스 바 fill
+        progressBarFill.snp.remakeConstraints { make in
+            make.leading.top.bottom.equalToSuperview()
+            make.width.equalToSuperview().multipliedBy(ratio)
+        }
+
+        // 배지 상태
+        switch completedCount {
+        case 0:
+            badgeLabel.text = "시작 전"
+            badgeView.backgroundColor = .surfaceSecondary
+            badgeLabel.textColor = .textHint
+            progressBarFill.backgroundColor = .primary
+        case total:
+            badgeLabel.text = "완료"
+            badgeView.backgroundColor = .greenLight
+            badgeLabel.textColor = .green
+            progressBarFill.backgroundColor = .green
+        default:
+            badgeLabel.text = "진행 중"
+            badgeView.backgroundColor = .amberLight
+            badgeLabel.textColor = .amberDark
+            progressBarFill.backgroundColor = .amber
+        }
     }
 }
