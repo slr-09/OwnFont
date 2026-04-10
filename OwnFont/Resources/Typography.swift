@@ -49,4 +49,10 @@ extension UIFont {
 
     /// Sub label - 13px Regular
     static let subLabel = UIFont(name: fontName, size: 13) ?? UIFont.systemFont(ofSize: 13)
+    
+    static let guideLabel = UIFont(name: fontName, size: 160) ?? UIFont.systemFont(ofSize: 130, weight: .heavy)
+
+    static func custom(size: CGFloat) -> UIFont {
+        UIFont(name: fontName, size: size) ?? UIFont.systemFont(ofSize: size)
+    }
 }

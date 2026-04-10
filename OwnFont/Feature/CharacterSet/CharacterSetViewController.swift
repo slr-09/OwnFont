@@ -26,9 +26,9 @@ final class CharacterSetViewController: UIViewController {
         btn.layer.cornerRadius = 14
         var config = UIButton.Configuration.plain()
         config.attributedTitle = AttributedString(
-            "텍스트 에디터로 확인하기",
+            "손글씨 폰트 확인하기",
             attributes: AttributeContainer([
-                .font: UIFont.systemFont(ofSize: 15, weight: .semibold),
+                .font: UIFont.cardHeader,
                 .foregroundColor: UIColor.white
             ])
         )

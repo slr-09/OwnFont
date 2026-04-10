@@ -52,7 +52,7 @@ final class GlyphLayoutManager: NSLayoutManager {
 
             let ci    = characterIndexForGlyph(at: gi)
             let attrs = storage.attributes(at: ci, effectiveRange: nil)
-            let font  = attrs[.font] as? UIFont ?? UIFont.systemFont(ofSize: 17)
+            let font  = attrs[.font] as? UIFont ?? .bodyHeader
 
             // Y축: 폰트 사이즈 기준 (시각적 높이 유지)
             let scaleY = font.pointSize / GlyphNormalizer.emSize

@@ -42,7 +42,7 @@ final class CharacterWritingView: UIView {
     private let navTitleLabel: UILabel = {
         let l = UILabel()
         l.text = "글자 쓰기"
-        l.font = .systemFont(ofSize: 17, weight: .bold)
+        l.font = .cardHeader
         l.textColor = .textPrimary
         return l
     }()
@@ -56,7 +56,7 @@ final class CharacterWritingView: UIView {
 
     private let counterLabel: UILabel = {
         let l = UILabel()
-        l.font = .systemFont(ofSize: 12, weight: .semibold)
+        l.font = .caption
         l.textColor = .indigo
         return l
     }()
@@ -65,7 +65,7 @@ final class CharacterWritingView: UIView {
     private let charGridLabel: UILabel = {
         let l = UILabel()
         l.text = "완성된 글자"
-        l.font = .systemFont(ofSize: 12, weight: .medium)
+        l.font = .caption
         l.textColor = .textHint
         return l
     }()
@@ -98,14 +98,14 @@ final class CharacterWritingView: UIView {
     private let currentCharHintLabel: UILabel = {
         let l = UILabel()
         l.text = "현재 글자:"
-        l.font = .systemFont(ofSize: 13, weight: .medium)
+        l.font = .subLabel
         l.textColor = .textHint
         return l
     }()
 
     private let currentCharBigLabel: UILabel = {
         let l = UILabel()
-        l.font = .systemFont(ofSize: 22, weight: .heavy)
+        l.font = .custom(size: 22)
         l.textColor = .primary
         return l
     }()
@@ -133,7 +133,7 @@ final class CharacterWritingView: UIView {
         config.attributedTitle = AttributedString(
             "다음 글자",
             attributes: AttributeContainer([
-                .font: UIFont.systemFont(ofSize: 15, weight: .bold),
+                .font: UIFont.body,
                 .foregroundColor: UIColor.white
             ])
         )
@@ -243,7 +243,7 @@ final class CharacterWritingView: UIView {
         }
 
         canvasView.snp.makeConstraints { make in
-            make.horizontalEdges.equalToSuperview().inset(50)
+            make.horizontalEdges.equalToSuperview().inset(100) // 캔버스 작게 조절 (에디터 글자 크기 키우기 위함)
             make.top.equalTo(currentCharRow.snp.bottom).offset(16)
             make.height.equalTo(canvasView.snp.width)   // 정사각형 비율 유지
         }
@@ -280,7 +280,7 @@ final class CharacterWritingView: UIView {
         characters.enumerated().forEach { index, char in
             let btn = UIButton(type: .custom)
             btn.setTitle(char, for: .normal)
-            btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+            btn.titleLabel?.font = .body
             btn.layer.cornerRadius = 10
             btn.tag = index
             btn.addTarget(self, action: #selector(slotTapped(_:)), for: .touchUpInside)
@@ -341,7 +341,7 @@ final class CharacterWritingView: UIView {
         nextButtonMode = mode
         var config = nextButton.configuration ?? UIButton.Configuration.plain()
         let titleAttrs = AttributeContainer([
-            .font: UIFont.systemFont(ofSize: 15, weight: .bold),
+            .font: UIFont.body,
             .foregroundColor: UIColor.white
         ])
         let symCfg = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)

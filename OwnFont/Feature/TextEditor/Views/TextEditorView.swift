@@ -32,24 +32,9 @@ final class TextEditorView: UIView {
 
     private let titleLabel: UILabel = {
         let l = UILabel()
-        l.text = "텍스트 에디터"
-        l.font = .systemFont(ofSize: 17, weight: .bold)
+        l.text = "내 손글씨"
+        l.font = .bodyHeader
         l.textColor = .textPrimary
-        return l
-    }()
-
-    private let badgeView: UIView = {
-        let v = UIView()
-        v.backgroundColor = .primaryLight
-        v.layer.cornerRadius = 12
-        return v
-    }()
-
-    private let badgeLabel: UILabel = {
-        let l = UILabel()
-        l.text = "손글씨 폰트"
-        l.font = .systemFont(ofSize: 12, weight: .semibold)
-        l.textColor = .primary
         return l
     }()
 
@@ -64,7 +49,7 @@ final class TextEditorView: UIView {
         storage.addLayoutManager(layoutManager)
 
         let tv = UITextView(frame: .zero, textContainer: container)
-        tv.font = .systemFont(ofSize: 32, weight: .regular)
+        tv.font = .custom(size: 32)
         tv.textColor = .label
         tv.backgroundColor = .systemBackground
         tv.textContainerInset = UIEdgeInsets(top: 20, left: 16, bottom: 20, right: 16)
@@ -73,13 +58,14 @@ final class TextEditorView: UIView {
         tv.spellCheckingType = .no
         tv.showsHorizontalScrollIndicator = false
         tv.alwaysBounceHorizontal = false
+        tv.alwaysBounceVertical = true // 짧은 텍스트라도 드래그로 키보드를 내릴 수 있도록 수직 바운스 허용
         return tv
     }()
 
     private let placeholderLabel: UILabel = {
         let l = UILabel()
-        l.text = "타이핑하면 손글씨 폰트로 표시돼요"
-        l.font = .systemFont(ofSize: 32, weight: .regular)
+        l.text = "텍스트를 입력하세요"
+        l.font = .cardTitle
         l.textColor = .textHint
         l.numberOfLines = 0
         return l
@@ -98,7 +84,7 @@ final class TextEditorView: UIView {
     private let sizeLabel: UILabel = {
         let l = UILabel()
         l.text = "글자 크기"
-        l.font = .systemFont(ofSize: 13, weight: .medium)
+        l.font = .subLabel
         l.textColor = .textHint
         return l
     }()
@@ -129,11 +115,9 @@ final class TextEditorView: UIView {
         addSubview(navBarView)
         navBarView.addSubview(backButton)
         navBarView.addSubview(titleLabel)
-        navBarView.addSubview(badgeView)
-        badgeView.addSubview(badgeLabel)
 
         addSubview(textView)
-        addSubview(placeholderLabel)   // textView 바깥: UIScrollView 내부 → contentSize 기준 잘림 방지
+        textView.addSubview(placeholderLabel)   // 스크롤 시 위아래로 같이 바운스되도록 textView 내부에 추가
 
         addSubview(sizeControlView)
         sizeControlView.addSubview(sizeLabel)
@@ -152,13 +136,6 @@ final class TextEditorView: UIView {
         titleLabel.snp.makeConstraints { make in
             make.leading.equalTo(backButton.snp.trailing).offset(12)
             make.centerY.equalToSuperview()
-        }
-        badgeView.snp.makeConstraints { make in
-            make.trailing.equalToSuperview().inset(20)
-            make.centerY.equalToSuperview()
-        }
-        badgeLabel.snp.makeConstraints { make in
-            make.edges.equalToSuperview().inset(UIEdgeInsets(top: 6, left: 12, bottom: 6, right: 12))
         }
 
         sizeControlView.snp.makeConstraints { make in
@@ -182,12 +159,11 @@ final class TextEditorView: UIView {
             make.bottom.equalTo(sizeControlView.snp.top)
         }
 
-        // textView.frameLayoutGuide: 스크롤과 무관한 실제 화면 프레임 기준
-        // textContainerInset(top:20, left:16)과 맞춰 텍스트 시작점과 일치시킴
+        // Y축은 텍스트 콘텐츠의 최상단(top)에 고정되어 위아래 스크롤/바운스 시 함께 움직이도록 하고,
+        // X축(가로 너비)은 frameLayoutGuide에 고정시켜 스크롤뷰의 contentSize가 늘어나거나 잘리는 걸 방지합니다.
         placeholderLabel.snp.makeConstraints { make in
-            make.top.equalTo(textView.frameLayoutGuide).offset(20)
-            make.leading.equalTo(textView.frameLayoutGuide).offset(16)
-            make.trailing.equalTo(textView.frameLayoutGuide).offset(-16)
+            make.top.equalToSuperview().offset(22)
+            make.horizontalEdges.equalTo(textView.frameLayoutGuide).inset(22)
         }
     }
 

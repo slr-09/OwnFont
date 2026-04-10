@@ -13,7 +13,7 @@ final class CharacterCanvasView: UIView {
 
     private let guideCharLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 160, weight: .heavy)
+        label.font = .guideLabel
         label.textColor = .primarySubtle
         label.textAlignment = .center
         label.alpha = 0.5
