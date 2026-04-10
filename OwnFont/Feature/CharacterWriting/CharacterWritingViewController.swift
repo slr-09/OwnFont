@@ -36,6 +36,7 @@ final class CharacterWritingViewController: UIViewController {
         bindCallbacks()
         contentView.setupCharSlots(characters: category.characters)
         refreshUI()
+        setupPencilKit()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -52,15 +53,26 @@ final class CharacterWritingViewController: UIViewController {
         }
         contentView.onPenTap = { [weak self] in
             self?.contentView.setActiveTool(isPen: true)
+            self?.contentView.canvasView.usePen()
         }
         contentView.onEraserTap = { [weak self] in
             self?.contentView.setActiveTool(isPen: false)
+            self?.contentView.canvasView.useEraser()
         }
-        contentView.onUndoTap = { /* PencilKit 연동 시 구현 */ }
-        contentView.onClearTap = { /* PencilKit 연동 시 구현 */ }
+        contentView.onUndoTap = { [weak self] in
+            self?.contentView.canvasView.undo()
+        }
+        contentView.onClearTap = { [weak self] in
+            self?.contentView.canvasView.clearDrawing()
+        }
         contentView.onNextTap = { [weak self] in
             self?.advanceToNextChar()
         }
+    }
+
+    // MARK: - PencilKit
+    private func setupPencilKit() {
+        contentView.canvasView.usePen()
     }
 
     // MARK: - Logic
@@ -74,6 +86,7 @@ final class CharacterWritingViewController: UIViewController {
             currentIndex = next
         }
 
+        contentView.canvasView.clearDrawing()
         refreshUI()
         contentView.scrollToSlot(at: currentIndex)
     }
