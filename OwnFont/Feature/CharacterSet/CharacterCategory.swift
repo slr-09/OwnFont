@@ -1,0 +1,71 @@
+//
+//  CharacterCategory.swift
+//  OwnFont
+//
+
+import UIKit
+
+enum CharacterCategory: CaseIterable {
+    case lowercaseLatin
+    case uppercaseLatin
+    case number
+    case symbol
+
+    var title: String {
+        switch self {
+        case .lowercaseLatin: return "영문 소문자"
+        case .uppercaseLatin: return "영문 대문자"
+        case .number:         return "숫자"
+        case .symbol:         return "특수문자"
+        }
+    }
+
+    var rangeLabel: String {
+        switch self {
+        case .lowercaseLatin: return "a–z"
+        case .uppercaseLatin: return "A–Z"
+        case .number:         return "0–9"
+        case .symbol:         return "!@#…"
+        }
+    }
+
+    var totalCount: Int {
+        switch self {
+        case .lowercaseLatin: return 26
+        case .uppercaseLatin: return 26
+        case .number:         return 10
+        case .symbol:         return 20
+        }
+    }
+
+    func subtitle(completedCount: Int) -> String {
+        "\(rangeLabel) · \(completedCount) / \(totalCount)자 완료"
+    }
+
+    var iconName: String {
+        switch self {
+        case .lowercaseLatin: return "textformat.abc"
+        case .uppercaseLatin: return "abc"
+        case .number:         return "number"
+        case .symbol:         return "sparkles"
+        }
+    }
+
+    var iconColor: UIColor {
+        switch self {
+        case .lowercaseLatin: return .primary
+        case .uppercaseLatin: return .indigo
+        case .number:         return .green
+        case .symbol:         return .amber
+        }
+    }
+
+    var iconBgColor: UIColor {
+        switch self {
+        case .lowercaseLatin: return .primaryLight
+        case .uppercaseLatin: return .indigoLight
+        case .number:         return .greenLight
+        case .symbol:         return .amberLight
+        }
+    }
+}
