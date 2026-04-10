@@ -13,6 +13,6 @@ import UIKit
 @objc(GlyphEntity)
 final class GlyphEntity: NSManagedObject {
     @NSManaged var character: String
-    @NSManaged var pathData: Any?             // Transformable → CGPathTransformer 사용
+    @NSManaged var pathData: UIBezierPath?    // Transformable → CGPathTransformer 사용 (구체 타입 필수)
     @NSManaged var createdAt: Date
 }

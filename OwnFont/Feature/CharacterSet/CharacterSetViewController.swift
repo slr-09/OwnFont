@@ -66,7 +66,8 @@ final class CharacterSetViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func editorButtonTapped() {
-        // TextEditor 준비 후 연결 예정
+        let vc = TextEditorViewController()
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc private func cardTapped(_ gesture: UITapGestureRecognizer) {
@@ -91,7 +92,6 @@ final class CharacterSetViewController: UIViewController {
         contentStackView.addArrangedSubview(cardListStackView)
 
         editorButton.addTarget(self, action: #selector(editorButtonTapped), for: .touchUpInside)
-        editorButton.isHidden = true
 
         CharacterCategory.allCases.enumerated().forEach { index, category in
             let cardView = CategoryCardView()
@@ -115,11 +115,14 @@ final class CharacterSetViewController: UIViewController {
     // MARK: - Update
 
     private func updateCompletionCounts() {
+        var totalCompleted = 0
         CharacterCategory.allCases.enumerated().forEach { index, category in
             let completedCount = category.characters.filter {
                 GlyphStore.shared.hasGlyph(for: $0)
             }.count
+            totalCompleted += completedCount
             cardViews[index].configure(with: category, completedCount: completedCount)
         }
+        editorButton.isHidden = totalCompleted == 0
     }
 }

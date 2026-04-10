@@ -22,7 +22,7 @@ final class GlyphStore {
     func save(_ glyph: GlyphData) {
         let entity = fetchEntity(for: glyph.character) ?? GlyphEntity(context: context)
         entity.character = glyph.character
-        entity.pathData = UIBezierPath(cgPath: glyph.normalizedPath) as Any
+        entity.pathData = UIBezierPath(cgPath: glyph.normalizedPath)
         entity.createdAt = glyph.createdAt
         CoreDataStack.shared.save()
     }
@@ -79,7 +79,7 @@ final class GlyphStore {
     }
 
     private func toGlyphData(_ entity: GlyphEntity) -> GlyphData? {
-        guard let bezier = entity.pathData as? UIBezierPath else { return nil }
+        guard let bezier = entity.pathData else { return nil }
         return GlyphData(character: entity.character, normalizedPath: bezier.cgPath, createdAt: entity.createdAt)
     }
 }
