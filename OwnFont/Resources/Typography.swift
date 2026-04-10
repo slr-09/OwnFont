@@ -24,4 +24,29 @@ extension UIFont {
 
     /// Body style - 14px Regular
     static let body = UIFont(name: fontName, size: 14) ?? UIFont.systemFont(ofSize: 14)
+
+    // MARK: - Card Title
+
+    /// Card title - 24px Bold
+    static let cardTitle = UIFont(name: fontName, size: 24) ?? UIFont.boldSystemFont(ofSize: 24)
+
+    // MARK: - Card Header
+
+    /// Card header - 16px Regular
+    static let cardHeader = UIFont(name: fontName, size: 16) ?? UIFont.systemFont(ofSize: 16)
+
+    // MARK: - Caption
+
+    /// Caption - 12px Regular
+    static let caption = UIFont(name: fontName, size: 12) ?? UIFont.systemFont(ofSize: 12)
+
+    // MARK: - Badge
+
+    /// Badge - 11px Regular
+    static let badge = UIFont(name: fontName, size: 11) ?? UIFont.systemFont(ofSize: 11)
+
+    // MARK: - Sub Label
+
+    /// Sub label - 13px Regular
+    static let subLabel = UIFont(name: fontName, size: 13) ?? UIFont.systemFont(ofSize: 13)
 }

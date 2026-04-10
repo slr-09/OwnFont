@@ -9,42 +9,54 @@ import UIKit
 
 extension UIColor {
     // MARK: - Brand Colors
-    
+
     /// Primary brand color - Coral red (#FF6B6B)
     static let primary = UIColor(hex: "FF6B6B")
-    
+
     /// Primary color - Dark variant (#E55A5A)
     static let primaryDark = UIColor(hex: "E55A5A")
-    
-    /// Primary color - Light variant for backgrounds (#FFE8E8)
-    static let primaryLight = UIColor(hex: "FFE8E8")
-    
+
+    /// Primary color - Light tint for backgrounds (#FFF1F1)
+    static let primaryLight = UIColor(hex: "FFF1F1")
+
     // MARK: - Text Colors
-    
-    /// Primary text color for headings and body text (#1A1A1A)
+
+    /// Title text color - Dark navy (#1A1A2E)
+    static let textTitle = UIColor(hex: "1A1A2E")
+
+    /// Primary text color for body text (#1A1A1A)
     static let textPrimary = UIColor(hex: "1A1A1A")
-    
+
     /// Secondary text color for descriptions and labels (#666666)
     static let textSecondary = UIColor(hex: "666666")
-    
+
     /// Tertiary text color for disabled and hint text (#999999)
     static let textTertiary = UIColor(hex: "999999")
-    
+
+    /// Hint text color for placeholders and subtitles (#9CA3AF)
+    static let textHint = UIColor(hex: "9CA3AF")
+
     // MARK: - Background Colors
-    
+
     /// Background color for main surfaces (#F5F5F5)
     static let background = UIColor(hex: "F5F5F5")
-    
+
     /// Surface color for cards and components (#FFFFFF)
     static let surface = UIColor(hex: "FFFFFF")
-    
+
+    /// Secondary surface for badges and progress track (#F3F4F6)
+    static let surfaceSecondary = UIColor(hex: "F3F4F6")
+
     // MARK: - Semantic Colors
-    
+
     /// Info color for links and information highlights (#4A90E2)
     static let info = UIColor(hex: "4A90E2")
-    
+
     /// Border color for dividers and outlines (#D0D0D0)
     static let border = UIColor(hex: "D0D0D0")
+
+    /// Light border / inactive icon color (#D1D5DB)
+    static let borderLight = UIColor(hex: "D1D5DB")
 
     // MARK: - Success Colors
 
@@ -53,6 +65,20 @@ extension UIColor {
 
     /// Success color - Light variant for backgrounds (#D1FAE5)
     static let greenLight = UIColor(hex: "D1FAE5")
+
+    // MARK: - Accent Colors
+
+    /// Indigo accent (#6366F1)
+    static let indigo = UIColor(hex: "6366F1")
+
+    /// Indigo light tint for backgrounds (#EEF2FF)
+    static let indigoLight = UIColor(hex: "EEF2FF")
+
+    /// Amber accent (#F59E0B)
+    static let amber = UIColor(hex: "F59E0B")
+
+    /// Amber light tint for backgrounds (#FEF3C7)
+    static let amberLight = UIColor(hex: "FEF3C7")
 }
 
 // MARK: - Hex Initializer
