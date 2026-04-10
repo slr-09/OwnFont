@@ -137,11 +137,11 @@ final class CategoryCardView: UIView {
         addSubview(progressBarBg)
 
         topRowStackView.snp.makeConstraints { make in
-            make.top.leading.trailing.equalToSuperview().inset(16)
+            make.top.horizontalEdges.equalToSuperview().inset(16)
         }
         progressBarBg.snp.makeConstraints { make in
             make.top.equalTo(topRowStackView.snp.bottom).offset(10)
-            make.leading.trailing.equalToSuperview().inset(16)
+            make.horizontalEdges.equalToSuperview().inset(16)
             make.bottom.equalToSuperview().inset(16)
             make.height.equalTo(6)
         }

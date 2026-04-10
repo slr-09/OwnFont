@@ -42,6 +42,21 @@ enum CharacterCategory: CaseIterable {
         "\(rangeLabel) · \(completedCount) / \(totalCount)자 완료"
     }
 
+    var characters: [String] {
+        switch self {
+        case .lowercaseLatin:
+            return (Unicode.Scalar("a").value...Unicode.Scalar("z").value)
+                .compactMap { Unicode.Scalar($0).map { String($0) } }
+        case .uppercaseLatin:
+            return (Unicode.Scalar("A").value...Unicode.Scalar("Z").value)
+                .compactMap { Unicode.Scalar($0).map { String($0) } }
+        case .number:
+            return Array("0123456789").map { String($0) }
+        case .symbol:
+            return Array("!@#$%^&*()-_+=[]{}:;/:").prefix(20).map { String($0) }
+        }
+    }
+
     var iconName: String {
         switch self {
         case .lowercaseLatin: return "textformat.abc"

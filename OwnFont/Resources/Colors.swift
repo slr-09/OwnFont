@@ -19,6 +19,9 @@ extension UIColor {
     /// Primary color - Light tint for backgrounds (#FFF1F1)
     static let primaryLight = UIColor(hex: "FFF1F1")
 
+    /// Primary color - primaryLight보다 약간 진한 연한 핑크 (#FFE0E0)
+    static let primarySubtle = UIColor(hex: "FFE0E0")
+
     // MARK: - Text Colors
 
     /// Title text color - Dark navy (#1A1A2E)
@@ -79,6 +82,17 @@ extension UIColor {
 
     /// Amber light tint for backgrounds (#FEF3C7)
     static let amberLight = UIColor(hex: "FEF3C7")
+
+    /// Amber dark — 현재 글자 슬롯 텍스트 색상 (#D97706)
+    static let amberDark = UIColor(hex: "D97706")
+
+    /// Amber border — 현재 글자 슬롯 테두리 색상 (#FCD34D)
+    static let amberBorder = UIColor(hex: "FCD34D")
+
+    // MARK: - Icon Colors
+
+    /// 비활성 아이콘 색상 (#6B7280)
+    static let iconInactive = UIColor(hex: "6B7280")
 }
 
 // MARK: - Hex Initializer
