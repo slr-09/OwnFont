@@ -4,6 +4,7 @@
 //
 
 import UIKit
+import PencilKit
 
 final class CharacterWritingViewController: UIViewController {
 
@@ -80,6 +81,7 @@ final class CharacterWritingViewController: UIViewController {
         let total = category.characters.count
         guard currentIndex < total else { return }
 
+        saveCurrentGlyph()
         completedIndices.insert(currentIndex)
 
         if let next = ((currentIndex + 1)..<total).first(where: { !completedIndices.contains($0) }) {
@@ -89,6 +91,30 @@ final class CharacterWritingViewController: UIViewController {
         contentView.canvasView.clearDrawing()
         refreshUI()
         contentView.scrollToSlot(at: currentIndex)
+    }
+
+    /// 현재 글자의 손글씨를 CGPath로 변환해 GlyphStore에 저장하고 미리보기를 표시
+    private func saveCurrentGlyph() {
+        let drawing = contentView.canvasView.drawing
+        guard !drawing.strokes.isEmpty else { return }
+
+        let character = category.characters[currentIndex]
+        let canvasSize = contentView.canvasView.bounds.size
+
+        let rawPath = DrawingPathExtractor.extract(from: drawing)
+        let normalizedPath = GlyphNormalizer.normalize(rawPath, canvasSize: canvasSize)
+        
+        GlyphStore.shared.save(
+            GlyphData(character: character, normalizedPath: normalizedPath, createdAt: Date())
+        )
+
+        // 복원 검증
+        if let restored = GlyphStore.shared.glyph(for: character) {
+            let box = restored.normalizedPath.boundingBoxOfPath
+            print("복원 성공: \(character), boundingBox: \(box)")
+        } else {
+            print("복원 실패: \(character)")
+        }
     }
 
     private func refreshUI() {

@@ -13,7 +13,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // NSPersistentContainer 로드 전에 Transformer를 반드시 등록해야 합니다.
+        CGPathTransformer.register()
         return true
     }
 
