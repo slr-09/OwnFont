@@ -3,11 +3,13 @@
 //  OwnFont
 //
 
+import Combine
 import UIKit
 
 final class TextEditorViewController: UIViewController {
 
     private var contentView: TextEditorView { view as! TextEditorView }
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Lifecycle
 
@@ -18,7 +20,7 @@ final class TextEditorViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         bindCallbacks()
-        contentView.textView.delegate = self
+        bindPlaceholder()
         
         // 1. 드래그로 키보드 내리기 
         contentView.textView.keyboardDismissMode = .onDrag
@@ -57,6 +59,17 @@ final class TextEditorViewController: UIViewController {
         }
     }
 
+    private func bindPlaceholder() {
+        NotificationCenter.default
+            .publisher(for: UITextView.textDidChangeNotification, object: contentView.textView)
+            .compactMap { ($0.object as? UITextView)?.text.isEmpty }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isEmpty in
+                self?.contentView.setPlaceholderVisible(isEmpty)
+            }
+            .store(in: &cancellables)
+    }
+
     // MARK: - Font Size
 
     private func updateFontSize(_ size: CGFloat) {
@@ -77,23 +90,6 @@ final class TextEditorViewController: UIViewController {
         let fullRange = NSRange(location: 0, length: tv.textStorage.length)
         lm.invalidateDisplay(forGlyphRange: fullRange)
         tv.setNeedsDisplay()
-    }
-}
-
-// MARK: - UITextViewDelegate
-
-extension TextEditorViewController: UITextViewDelegate {
-
-    func textViewDidChange(_ textView: UITextView) {
-        contentView.setPlaceholderVisible(textView.text.isEmpty)
-    }
-
-    // UITextViewDelegate ⊃ UIScrollViewDelegate
-    // contentOffset.x를 항상 0으로 고정해 좌우 스크롤 차단
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        if scrollView.contentOffset.x != 0 {
-            scrollView.contentOffset.x = 0
-        }
     }
 }
 
