@@ -51,12 +51,18 @@ final class TextEditorViewController: UIViewController {
     // MARK: - Bind
 
     private func bindCallbacks() {
-        contentView.onBackTap = { [weak self] in
-            self?.navigationController?.popViewController(animated: true)
-        }
-        contentView.onFontSizeChange = { [weak self] size in
-            self?.updateFontSize(size)
-        }
+        contentView.actionPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] action in
+                guard let self else { return }
+                switch action {
+                case .back:
+                    navigationController?.popViewController(animated: true)
+                case .fontSizeChanged(let size):
+                    updateFontSize(size)
+                }
+            }
+            .store(in: &cancellables)
     }
 
     private func bindPlaceholder() {

@@ -3,14 +3,20 @@
 //  OwnFont
 //
 
+import Combine
 import UIKit
 import SnapKit
 
 final class TextEditorView: UIView {
 
-    // MARK: - Callbacks
-    var onBackTap: (() -> Void)?
-    var onFontSizeChange: ((CGFloat) -> Void)?
+    // MARK: - Types
+    enum Action {
+        case back
+        case fontSizeChanged(CGFloat)
+    }
+
+    // MARK: - Publisher
+    let actionPublisher = PassthroughSubject<Action, Never>()
 
     // MARK: - Nav Bar
 
@@ -187,10 +193,10 @@ final class TextEditorView: UIView {
         placeholderLabel.isHidden = !visible
     }
 
-    @objc private func handleBack() { onBackTap?() }
+    @objc private func handleBack() { actionPublisher.send(.back) }
 
     @objc private func sizeChanged() {
         let size = Self.fontSizes[sizeSegment.selectedSegmentIndex]
-        onFontSizeChange?(size)
+        actionPublisher.send(.fontSizeChanged(size))
     }
 }
