@@ -5,6 +5,7 @@
 //  Created by Claude
 //
 
+import Combine
 import UIKit
 import SnapKit
 
@@ -50,17 +51,19 @@ final class CharacterSetViewController: UIViewController {
     }()
 
     private var cardViews: [CategoryCardView] = []
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        updateCompletionCounts()
+        bindStore()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        updateCompletionCounts()
     }
 
     // MARK: - Actions
@@ -110,6 +113,17 @@ final class CharacterSetViewController: UIViewController {
             make.edges.equalToSuperview().inset(UIEdgeInsets(top: 20, left: 20, bottom: 20, right: 20))
             make.width.equalToSuperview().offset(-40)
         }
+    }
+
+    // MARK: - Bind
+
+    private func bindStore() {
+        GlyphStore.shared.glyphsDidChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                self?.updateCompletionCounts()
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Update

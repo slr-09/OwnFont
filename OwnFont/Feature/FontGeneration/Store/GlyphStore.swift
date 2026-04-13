@@ -3,6 +3,7 @@
 //  OwnFont
 //
 
+import Combine
 import CoreData
 import CoreGraphics
 import PencilKit
@@ -13,6 +14,8 @@ final class GlyphStore {
 
     static let shared = GlyphStore()
     private init() {}
+
+    let glyphsDidChange = PassthroughSubject<Void, Never>()
 
     private var context: NSManagedObjectContext { CoreDataStack.shared.context }
 
@@ -25,6 +28,7 @@ final class GlyphStore {
         entity.pathData = UIBezierPath(cgPath: glyph.normalizedPath)
         entity.createdAt = glyph.createdAt
         CoreDataStack.shared.save()
+        glyphsDidChange.send()
     }
 
     // MARK: - Read
