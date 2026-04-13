@@ -3,6 +3,7 @@
 //  OwnFont
 //
 
+import Combine
 import UIKit
 import SnapKit
 
@@ -11,16 +12,16 @@ final class CharacterWritingView: UIView {
     // MARK: - Types
     enum NextButtonMode { case next, done, save }
 
-    // MARK: - Callbacks
-    var onBackTap: (() -> Void)?
-    var onNextTap: (() -> Void)?
-    var onDoneTap: (() -> Void)?
-    var onSaveTap: (() -> Void)?
-    var onPenTap: (() -> Void)?
-    var onEraserTap: (() -> Void)?
-    var onUndoTap: (() -> Void)?
-    var onClearTap: (() -> Void)?
-    var onSlotTap: ((Int) -> Void)?
+    enum Action {
+        case back
+        case next, done, save
+        case penSelected, eraserSelected
+        case undo, clear
+        case slotTapped(Int)
+    }
+
+    // MARK: - Publisher
+    let actionPublisher = PassthroughSubject<Action, Never>()
 
     // MARK: - Nav Bar
     private let navBarView: UIView = {
@@ -292,19 +293,19 @@ final class CharacterWritingView: UIView {
         nextButton.addTarget(self, action: #selector(handleNext), for: .touchUpInside)
     }
 
-    @objc private func handleBack()   { onBackTap?() }
-    @objc private func handlePen()    { onPenTap?() }
-    @objc private func handleEraser() { onEraserTap?() }
-    @objc private func handleUndo()   { onUndoTap?() }
-    @objc private func handleClear()  { onClearTap?() }
+    @objc private func handleBack()   { actionPublisher.send(.back) }
+    @objc private func handlePen()    { actionPublisher.send(.penSelected) }
+    @objc private func handleEraser() { actionPublisher.send(.eraserSelected) }
+    @objc private func handleUndo()   { actionPublisher.send(.undo) }
+    @objc private func handleClear()  { actionPublisher.send(.clear) }
     @objc private func handleNext() {
         switch nextButtonMode {
-        case .next: onNextTap?()
-        case .done: onDoneTap?()
-        case .save: onSaveTap?()
+        case .next: actionPublisher.send(.next)
+        case .done: actionPublisher.send(.done)
+        case .save: actionPublisher.send(.save)
         }
     }
-    @objc private func slotTapped(_ sender: UIButton) { onSlotTap?(sender.tag) }
+    @objc private func slotTapped(_ sender: UIButton) { actionPublisher.send(.slotTapped(sender.tag)) }
 
     // MARK: - Public Interface
     func setupCharSlots(characters: [String]) {

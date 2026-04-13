@@ -3,6 +3,7 @@
 //  OwnFont
 //
 
+import Combine
 import UIKit
 import PencilKit
 
@@ -12,6 +13,7 @@ final class CharacterWritingViewController: UIViewController {
     private let category: CharacterCategory
     private var currentIndex: Int = 0
     private var completedIndices: Set<Int> = []
+    private var cancellables = Set<AnyCancellable>()
 
     private var contentView: CharacterWritingView {
         view as! CharacterWritingView
@@ -50,36 +52,35 @@ final class CharacterWritingViewController: UIViewController {
 
     // MARK: - Bind
     private func bindCallbacks() {
-        contentView.onBackTap = { [weak self] in
-            self?.navigationController?.popViewController(animated: true)
-        }
-        contentView.onPenTap = { [weak self] in
-            self?.contentView.setActiveTool(isPen: true)
-            self?.contentView.canvasView.usePen()
-        }
-        contentView.onEraserTap = { [weak self] in
-            self?.contentView.setActiveTool(isPen: false)
-            self?.contentView.canvasView.useEraser()
-        }
-        contentView.onUndoTap = { [weak self] in
-            self?.contentView.canvasView.undo()
-        }
-        contentView.onClearTap = { [weak self] in
-            self?.contentView.canvasView.clearDrawing()
-        }
-        contentView.onNextTap = { [weak self] in
-            self?.advanceToNextChar()
-        }
-        contentView.onDoneTap = { [weak self] in
-            self?.saveCurrentGlyph()
-            self?.navigationController?.popViewController(animated: true)
-        }
-        contentView.onSaveTap = { [weak self] in
-            self?.saveAndCycleToNext()
-        }
-        contentView.onSlotTap = { [weak self] index in
-            self?.navigateTo(index: index)
-        }
+        contentView.actionPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] action in
+                guard let self else { return }
+                switch action {
+                case .back:
+                    navigationController?.popViewController(animated: true)
+                case .penSelected:
+                    contentView.setActiveTool(isPen: true)
+                    contentView.canvasView.usePen()
+                case .eraserSelected:
+                    contentView.setActiveTool(isPen: false)
+                    contentView.canvasView.useEraser()
+                case .undo:
+                    contentView.canvasView.undo()
+                case .clear:
+                    contentView.canvasView.clearDrawing()
+                case .next:
+                    advanceToNextChar()
+                case .done:
+                    saveCurrentGlyph()
+                    navigationController?.popViewController(animated: true)
+                case .save:
+                    saveAndCycleToNext()
+                case .slotTapped(let index):
+                    navigateTo(index: index)
+                }
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Restore
