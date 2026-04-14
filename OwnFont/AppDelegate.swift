@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import FirebaseCore
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -15,6 +16,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // NSPersistentContainer 로드 전에 Transformer를 반드시 등록해야 합니다.
         CGPathTransformer.register()
+        
+        FirebaseApp.configure()
+        
         return true
     }
 

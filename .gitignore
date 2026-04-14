@@ -21,3 +21,6 @@ Pods/
 # Xcode workspace settings
 *.xcworkspace/xcuserdata/
 *.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# Firebase
+GoogleService-Info.plist

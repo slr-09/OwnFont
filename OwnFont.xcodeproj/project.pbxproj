@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		2344B8AC2F86C1D90096F844 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2344B8AB2F86C1D90096F844 /* SnapKit */; };
+		2399AAD12F8D417C00A562D2 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2399AAD02F8D417C00A562D2 /* FirebaseCrashlytics */; };
+		2399B04A2F8E8A6A00A562D2 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2399B0492F8E8A6A00A562D2 /* FirebaseAnalytics */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,7 +42,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2399AAD12F8D417C00A562D2 /* FirebaseCrashlytics in Frameworks */,
 				2344B8AC2F86C1D90096F844 /* SnapKit in Frameworks */,
+				2399B04A2F8E8A6A00A562D2 /* FirebaseAnalytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -51,6 +55,7 @@
 			isa = PBXGroup;
 			children = (
 				2344B87A2F86B32E0096F844 /* OwnFont */,
+				2399B0482F8E8A6A00A562D2 /* Frameworks */,
 				2344B8792F86B32E0096F844 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -63,6 +68,13 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		2399B0482F8E8A6A00A562D2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -73,6 +85,7 @@
 				2344B8742F86B32E0096F844 /* Sources */,
 				2344B8752F86B32E0096F844 /* Frameworks */,
 				2344B8762F86B32E0096F844 /* Resources */,
+				2399AAD42F8D50A000A562D2 /* Crashlytics dSYM Upload */,
 			);
 			buildRules = (
 			);
@@ -84,6 +97,8 @@
 			name = OwnFont;
 			packageProductDependencies = (
 				2344B8AB2F86C1D90096F844 /* SnapKit */,
+				2399AAD02F8D417C00A562D2 /* FirebaseCrashlytics */,
+				2399B0492F8E8A6A00A562D2 /* FirebaseAnalytics */,
 			);
 			productName = OwnFont;
 			productReference = 2344B8782F86B32E0096F844 /* OwnFont.app */;
@@ -115,6 +130,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				2344B8AA2F86C1D90096F844 /* XCRemoteSwiftPackageReference "SnapKit" */,
+				2399AACD2F8D417C00A562D2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2344B8792F86B32E0096F844 /* Products */;
@@ -135,6 +151,29 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2399AAD42F8D50A000A562D2 /* Crashlytics dSYM Upload */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}.debug.dylib",
+			);
+			name = "Crashlytics dSYM Upload";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2344B8742F86B32E0096F844 /* Sources */ = {
@@ -255,7 +294,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = ZT27N85LQ5;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -374,6 +413,14 @@
 				minimumVersion = 5.7.1;
 			};
 		};
+		2399AACD2F8D417C00A562D2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.12.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -381,6 +428,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2344B8AA2F86C1D90096F844 /* XCRemoteSwiftPackageReference "SnapKit" */;
 			productName = SnapKit;
+		};
+		2399AAD02F8D417C00A562D2 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2399AACD2F8D417C00A562D2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		2399B0492F8E8A6A00A562D2 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2399AACD2F8D417C00A562D2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
