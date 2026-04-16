@@ -87,38 +87,45 @@ final class CardDecorateViewController: UIViewController {
     // MARK: - Image Save
 
     private func renderCardAsImage() {
+        // png로 변환
         let card = contentView.memoCardView
-        let renderer = UIGraphicsImageRenderer(bounds: card.bounds)
-        let image = renderer.image { ctx in
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(bounds: card.bounds, format: format)
+        let pngData = renderer.pngData { ctx in
             card.layer.render(in: ctx.cgContext)
         }
 
+        requestPhotoAuthorization { [weak self] in
+            self?.savePNGToPhotoLibrary(pngData)
+        }
+    }
+
+    private func requestPhotoAuthorization(authorized: @escaping () -> Void) {
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { [weak self] status in
             DispatchQueue.main.async {
-                guard let self else { return }
                 switch status {
                 case .authorized, .limited:
-                    UIImageWriteToSavedPhotosAlbum(
-                        image, self,
-                        #selector(self.imageSaved(_:didFinishSavingWithError:contextInfo:)),
-                        nil
-                    )
+                    authorized()
                 default:
-                    self.showAlert(title: "저장 실패", message: "사진 접근 권한이 필요합니다.\n설정에서 허용해주세요.")
+                    self?.showAlert(title: "저장 실패", message: "사진 접근 권한이 필요합니다.\n설정에서 허용해주세요.")
                 }
             }
         }
     }
 
-    @objc private func imageSaved(
-        _ image: UIImage,
-        didFinishSavingWithError error: Error?,
-        contextInfo: UnsafeRawPointer
-    ) {
-        if let error {
-            showAlert(title: "저장 실패", message: error.localizedDescription)
-        } else {
-            showAlert(title: "저장 완료", message: "카드가 사진 앱에 저장됐어요!")
+    private func savePNGToPhotoLibrary(_ data: Data) {
+        PHPhotoLibrary.shared().performChanges({
+            let request = PHAssetCreationRequest.forAsset()
+            request.addResource(with: .photo, data: data, options: nil)
+        }) { [weak self] _, error in
+            DispatchQueue.main.async {
+                if let error {
+                    self?.showAlert(title: "저장 실패", message: error.localizedDescription)
+                } else {
+                    self?.showAlert(title: "저장 완료", message: "카드가 사진 앱에 저장됐어요!")
+                }
+            }
         }
     }
 
