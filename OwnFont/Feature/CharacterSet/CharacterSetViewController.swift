@@ -43,6 +43,28 @@ final class CharacterSetViewController: UIViewController {
         return btn
     }()
 
+    private let cardDecorateButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.backgroundColor = .amberLight
+        btn.layer.cornerRadius = 14
+        var config = UIButton.Configuration.plain()
+        config.attributedTitle = AttributedString(
+            "카드 꾸미기",
+            attributes: AttributeContainer([
+                .font: UIFont.cardHeader,
+                .foregroundColor: UIColor.amberDark
+            ])
+        )
+        config.image = UIImage(systemName: "rectangle.and.pencil.and.ellipsis")?.withConfiguration(
+            UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        )
+        config.imagePadding = 8
+        config.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20)
+        config.baseForegroundColor = UIColor.amberDark
+        btn.configuration = config
+        return btn
+    }()
+
     private let cardListStackView: UIStackView = {
         let sv = UIStackView()
         sv.axis = .vertical
@@ -73,6 +95,11 @@ final class CharacterSetViewController: UIViewController {
         navigationController?.pushViewController(vc, animated: true)
     }
 
+    @objc private func cardDecorateButtonTapped() {
+        let vc = CardDecorateViewController()
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
     @objc private func cardTapped(_ gesture: UITapGestureRecognizer) {
         guard let tag = gesture.view?.tag else { return }
         let categories = Array(CharacterCategory.allCases)
@@ -92,9 +119,11 @@ final class CharacterSetViewController: UIViewController {
 
         contentStackView.addArrangedSubview(headerView)
         contentStackView.addArrangedSubview(editorButton)
+        contentStackView.addArrangedSubview(cardDecorateButton)
         contentStackView.addArrangedSubview(cardListStackView)
 
         editorButton.addTarget(self, action: #selector(editorButtonTapped), for: .touchUpInside)
+        cardDecorateButton.addTarget(self, action: #selector(cardDecorateButtonTapped), for: .touchUpInside)
 
         CharacterCategory.allCases.enumerated().forEach { index, category in
             let cardView = CategoryCardView()
