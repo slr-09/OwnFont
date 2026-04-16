@@ -118,12 +118,12 @@ final class CardDecorateViewController: UIViewController {
         PHPhotoLibrary.shared().performChanges({
             let request = PHAssetCreationRequest.forAsset()
             request.addResource(with: .photo, data: data, options: nil)
-        }) { [weak self] _, error in
+        }) { _, error in
             DispatchQueue.main.async {
-                if let error {
-                    self?.showAlert(title: "저장 실패", message: error.localizedDescription)
+                if error != nil {
+                    ToastManager.show("저장 실패", style: .error)
                 } else {
-                    self?.showAlert(title: "저장 완료", message: "카드가 사진 앱에 저장됐어요!")
+                    ToastManager.show("저장 완료", style: .success)
                 }
             }
         }
