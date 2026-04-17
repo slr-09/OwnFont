@@ -77,6 +77,9 @@ extension UIColor {
     /// Indigo light tint for backgrounds (#EEF2FF)
     static let indigoLight = UIColor(hex: "EEF2FF")
 
+    /// Indigo subtle tint for card backgrounds (#E5EBFF)
+    static let indigoSubtle = UIColor(hex: "E5EBFF")
+
     /// Amber accent (#F59E0B)
     static let amber = UIColor(hex: "F59E0B")
 

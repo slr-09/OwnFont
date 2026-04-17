@@ -46,7 +46,7 @@ final class CardDecorateView: UIView {
 
     private let titleLabel: UILabel = {
         let l = UILabel()
-        l.text = "카드 꾸미기"
+        l.text = "메모지 꾸미기"
         l.font = .cardHeader
         l.textColor = .textPrimary
         return l

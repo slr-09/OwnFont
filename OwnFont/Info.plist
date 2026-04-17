@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>카드를 사진 앱에 저장하기 위해 접근 권한이 필요합니다.</string>
+	<string>메모지를 사진 앱에 저장하기 위해 접근 권한이 필요합니다.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIAppFonts</key>
