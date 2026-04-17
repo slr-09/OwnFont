@@ -72,8 +72,10 @@ final class GlyphLayoutManager: NSLayoutManager {
             let screenPath = CGMutablePath()
             screenPath.addPath(glyphData.normalizedPath, transform: transform)
 
+            let color = (attrs[.foregroundColor] as? UIColor ?? .label).cgColor
+
             ctx.saveGState()
-            ctx.setStrokeColor(UIColor.label.cgColor)
+            ctx.setStrokeColor(color)
             ctx.setLineWidth(font.pointSize * 0.07)
             ctx.setLineCap(.round)
             ctx.setLineJoin(.round)

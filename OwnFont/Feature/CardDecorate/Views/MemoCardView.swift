@@ -42,6 +42,16 @@ final class MemoCardView: UIView {
     private var isMainVisible = true
     private var isSubVisible = true
 
+    // MARK: - Text Color State
+
+    private var mainActiveColor: UIColor = .textPrimary
+    private var subActiveColor: UIColor = .textPrimary
+
+    // MARK: - Placeholder State
+
+    private var isMainPlaceholder = true
+    private var isSubPlaceholder = true
+
     // MARK: - Init
 
     override init(frame: CGRect) {
@@ -84,20 +94,21 @@ final class MemoCardView: UIView {
 
     func configure(date: String? = nil, mainText: String? = nil, subText: String? = nil) {
         if let date { dateLabel.text = date }
-        if let mainText { updateTextView(mainTextView, text: mainText, placeholder: mainPlaceholder, activeColor: .textPrimary) }
-        if let subText  { updateTextView(subTextView,  text: subText,  placeholder: subPlaceholder,  activeColor: .iconInactive) }
+        if let mainText { updateTextView(mainTextView, text: mainText, placeholder: mainPlaceholder, activeColor: mainActiveColor) }
+        if let subText  { updateTextView(subTextView,  text: subText,  placeholder: subPlaceholder,  activeColor: subActiveColor) }
     }
 
     // MARK: - Private
 
     private func updateTextView(_ tv: UITextView, text: String, placeholder: String, activeColor: UIColor) {
-        if text.isEmpty {
-            tv.text = placeholder
-            tv.textColor = .textHint
-        } else {
-            tv.text = text
-            tv.textColor = activeColor
-        }
+        let isEmpty = text.isEmpty
+        if tv === mainTextView { isMainPlaceholder = isEmpty }
+        else { isSubPlaceholder = isEmpty }
+
+        let (displayText, color) = isEmpty ? (placeholder, UIColor.textHint) : (text, activeColor)
+        tv.text = displayText
+        let range = NSRange(location: 0, length: tv.textStorage.length)
+        tv.textStorage.addAttribute(.foregroundColor, value: color, range: range)
         tv.invalidateIntrinsicContentSize()
     }
 
@@ -105,6 +116,19 @@ final class MemoCardView: UIView {
         backgroundColor = color
         layer.borderColor = stroke.cgColor
         divider.backgroundColor = stroke
+    }
+
+    func setTextColor(_ color: UIColor) {
+        mainActiveColor = color
+        subActiveColor = color
+        if !isMainPlaceholder {
+            let range = NSRange(location: 0, length: mainTextView.textStorage.length)
+            mainTextView.textStorage.addAttribute(.foregroundColor, value: color, range: range)
+        }
+        if !isSubPlaceholder {
+            let range = NSRange(location: 0, length: subTextView.textStorage.length)
+            subTextView.textStorage.addAttribute(.foregroundColor, value: color, range: range)
+        }
     }
 
     func setMainVisible(_ visible: Bool) {

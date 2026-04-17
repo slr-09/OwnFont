@@ -55,6 +55,8 @@ final class CardDecorateViewController: UIViewController {
                     contentView.memoCardView.configure(subText: text)
                 case .backgroundColorSelected(let bg, let stroke):
                     contentView.memoCardView.setBackground(bg, stroke: stroke)
+                case .textColorSelected(let color):
+                    contentView.memoCardView.setTextColor(color)
                 case .mainTextToggled(let isOn):
                     contentView.memoCardView.setMainVisible(isOn)
                 case .subTextToggled(let isOn):

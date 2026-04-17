@@ -17,6 +17,7 @@ final class CardDecorateView: UIView {
         case mainTextChanged(String)
         case subTextChanged(String)
         case backgroundColorSelected(bg: UIColor, stroke: UIColor)
+        case textColorSelected(UIColor)
         case mainTextToggled(Bool)   // true = 보이기
         case subTextToggled(Bool)
     }
@@ -98,7 +99,7 @@ final class CardDecorateView: UIView {
     }()
 
     private let segmentControl: UISegmentedControl = {
-        let sc = UISegmentedControl(items: ["텍스트", "배경색"])
+        let sc = UISegmentedControl(items: ["텍스트", "색상"])
         sc.selectedSegmentIndex = 0
         sc.selectedSegmentTintColor = .primary
         let normalAttr: [NSAttributedString.Key: Any] = [
@@ -169,6 +170,18 @@ final class CardDecorateView: UIView {
     private var colorButtons: [UIButton] = []
     private var selectedColorIndex: Int = 0
 
+    private static let textColors: [(name: String, color: UIColor)] = [
+        ("검정",   UIColor(hex: "1A1A1A")),
+        ("회색",   UIColor(hex: "6B7280")),
+        ("흰색",   UIColor(hex: "FFFFFF")),
+        ("네이비", UIColor(hex: "1E3A5F")),
+        ("브라운", UIColor(hex: "7C4A1E")),
+        ("포레스트", UIColor(hex: "1A4731")),
+    ]
+
+    private var textColorButtons: [UIButton] = []
+    private var selectedTextColorIndex: Int = 0
+
     // MARK: - Init
 
     override init(frame: CGRect) {
@@ -224,7 +237,7 @@ final class CardDecorateView: UIView {
 
         bottomPanel.snp.makeConstraints { make in
             make.horizontalEdges.bottom.equalToSuperview()
-            make.height.equalTo(260)
+            make.height.equalTo(320)
         }
         segmentControl.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(20)
@@ -284,31 +297,87 @@ final class CardDecorateView: UIView {
     }
 
     private func setupColorTab() {
+        // 배경색 섹션
+        let bgLabel = makeSectionLabel("배경색")
+        let bgStack = makeColorButtonStack()
+        CardDecorateView.bgColors.enumerated().forEach { index, item in
+            let btn = makeCircleButton(color: item.bg, selected: index == 0)
+            btn.tag = index
+            btn.addTarget(self, action: #selector(colorButtonTapped(_:)), for: .touchUpInside)
+            bgStack.addArrangedSubview(btn)
+            colorButtons.append(btn)
+        }
+
+        // 글자색 섹션
+        let textColorLabel = makeSectionLabel("글자색")
+        let textColorStack = makeColorButtonStack()
+        CardDecorateView.textColors.enumerated().forEach { index, item in
+            let btn = makeCircleButton(color: item.color, selected: index == 0)
+            btn.tag = index
+            btn.addTarget(self, action: #selector(textColorButtonTapped(_:)), for: .touchUpInside)
+            textColorStack.addArrangedSubview(btn)
+            textColorButtons.append(btn)
+        }
+
+        let outerStack = UIStackView(arrangedSubviews: [bgLabel, bgStack, textColorLabel, textColorStack])
+        outerStack.axis = .vertical
+        outerStack.spacing = 8
+        outerStack.setCustomSpacing(4, after: bgLabel)
+        outerStack.setCustomSpacing(16, after: bgStack)
+        outerStack.setCustomSpacing(4, after: textColorLabel)
+        colorTabView.addSubview(outerStack)
+
+        let count = CardDecorateView.bgColors.count
+        bgStack.snp.makeConstraints { make in
+            make.height.equalTo(44)
+            make.width.equalTo(44 * count + 12 * (count - 1))
+            make.centerX.equalTo(outerStack)
+        }
+        let tcount = CardDecorateView.textColors.count
+        textColorStack.snp.makeConstraints { make in
+            make.height.equalTo(44)
+            make.width.equalTo(44 * tcount + 12 * (tcount - 1))
+            make.centerX.equalTo(outerStack)
+        }
+        outerStack.snp.makeConstraints { make in
+            make.top.horizontalEdges.equalToSuperview()
+            make.bottom.lessThanOrEqualToSuperview()
+        }
+    }
+
+    private func makeSectionLabel(_ text: String) -> UILabel {
+        let l = UILabel()
+        l.text = text
+        l.font = .badge
+        l.textColor = .textSecondary
+        return l
+    }
+
+    private func makeColorButtonStack() -> UIStackView {
         let stack = UIStackView()
         stack.axis = .horizontal
         stack.spacing = 12
         stack.distribution = .fillEqually
-        colorTabView.addSubview(stack)
+        return stack
+    }
 
-        CardDecorateView.bgColors.enumerated().forEach { index, item in
-            let btn = UIButton(type: .custom)
-            btn.backgroundColor = item.bg
-            btn.layer.cornerRadius = 22
-            btn.layer.borderWidth = index == 0 ? 2.5 : 1
-            btn.layer.borderColor = index == 0 ? UIColor.primary.cgColor : UIColor.border.cgColor
-            btn.tag = index
-            btn.addTarget(self, action: #selector(colorButtonTapped(_:)), for: .touchUpInside)
-            stack.addArrangedSubview(btn)
-            colorButtons.append(btn)
-        }
+    private func makeCircleButton(color: UIColor, selected: Bool) -> UIButton {
+        let btn = UIButton(type: .custom)
+        btn.backgroundColor = color
+        btn.layer.cornerRadius = 22
+        btn.layer.borderWidth = selected ? 2.5 : 1
+        btn.layer.borderColor = selected ? UIColor.primary.cgColor : UIColor.border.cgColor
 
-        let count = CardDecorateView.bgColors.count
-        stack.snp.makeConstraints { make in
-            make.top.equalToSuperview()
-            make.centerX.equalToSuperview()
-            make.height.equalTo(44)
-            make.width.equalTo(44 * count + 12 * (count - 1))
+        // 밝은 색상 버튼에 안쪽 그림자 추가 (배경과 구분)
+        var white: CGFloat = 0
+        color.getWhite(&white, alpha: nil)
+        if white > 0.9 {
+            btn.layer.shadowColor = UIColor.black.cgColor
+            btn.layer.shadowOpacity = 0.1
+            btn.layer.shadowOffset = CGSize(width: 0, height: 1)
+            btn.layer.shadowRadius = 2
         }
+        return btn
     }
 
     // MARK: - Actions Setup
@@ -414,6 +483,21 @@ final class CardDecorateView: UIView {
 
         let selected = CardDecorateView.bgColors[index]
         actionPublisher.send(.backgroundColorSelected(bg: selected.bg, stroke: selected.stroke))
+    }
+
+    @objc private func textColorButtonTapped(_ sender: UIButton) {
+        let index = sender.tag
+        guard index < CardDecorateView.textColors.count else { return }
+
+        textColorButtons[selectedTextColorIndex].layer.borderWidth = 1
+        textColorButtons[selectedTextColorIndex].layer.borderColor = UIColor.border.cgColor
+
+        selectedTextColorIndex = index
+        textColorButtons[index].layer.borderWidth = 2.5
+        textColorButtons[index].layer.borderColor = UIColor.primary.cgColor
+
+        let selected = CardDecorateView.textColors[index]
+        actionPublisher.send(.textColorSelected(selected.color))
     }
 
     // MARK: - Tab Switch
