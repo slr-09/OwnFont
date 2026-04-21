@@ -7,6 +7,7 @@
 
 import UIKit
 import FirebaseCore
+import FirebaseAnalytics
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -18,6 +19,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         CGPathTransformer.register()
         
         FirebaseApp.configure()
+        Analytics.setAnalyticsCollectionEnabled(true)
         
         return true
     }
