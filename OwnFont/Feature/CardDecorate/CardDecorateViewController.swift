@@ -20,7 +20,7 @@ final class CardDecorateViewController: UIViewController {
     // MARK: - Lifecycle
 
     override func loadView() {
-        view = CardDecorateView()
+        view = CardDecorateView(title: "메모지 꾸미기")
     }
 
     override func viewDidLoad() {
@@ -89,7 +89,6 @@ final class CardDecorateViewController: UIViewController {
     // MARK: - Image Save
 
     private func renderCardAsImage() {
-        // png로 변환
         let card = contentView.memoCardView
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false

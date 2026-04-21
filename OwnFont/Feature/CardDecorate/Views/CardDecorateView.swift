@@ -18,7 +18,7 @@ final class CardDecorateView: UIView {
         case subTextChanged(String)
         case backgroundColorSelected(bg: UIColor, stroke: UIColor)
         case textColorSelected(UIColor)
-        case mainTextToggled(Bool)   // true = 보이기
+        case mainTextToggled(Bool)
         case subTextToggled(Bool)
     }
 
@@ -46,7 +46,6 @@ final class CardDecorateView: UIView {
 
     private let titleLabel: UILabel = {
         let l = UILabel()
-        l.text = "메모지 꾸미기"
         l.font = .cardHeader
         l.textColor = .textPrimary
         return l
@@ -184,8 +183,9 @@ final class CardDecorateView: UIView {
 
     // MARK: - Init
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    init(title: String) {
+        super.init(frame: .zero)
+        titleLabel.text = title
         backgroundColor = .background
         setupLayout()
         setupActions()
@@ -297,7 +297,6 @@ final class CardDecorateView: UIView {
     }
 
     private func setupColorTab() {
-        // 배경색 섹션
         let bgLabel = makeSectionLabel("배경색")
         let bgStack = makeColorButtonStack()
         CardDecorateView.bgColors.enumerated().forEach { index, item in
@@ -308,7 +307,6 @@ final class CardDecorateView: UIView {
             colorButtons.append(btn)
         }
 
-        // 글자색 섹션
         let textColorLabel = makeSectionLabel("글자색")
         let textColorStack = makeColorButtonStack()
         CardDecorateView.textColors.enumerated().forEach { index, item in
@@ -368,7 +366,6 @@ final class CardDecorateView: UIView {
         btn.layer.borderWidth = selected ? 2.5 : 1
         btn.layer.borderColor = selected ? UIColor.primary.cgColor : UIColor.border.cgColor
 
-        // 밝은 색상 버튼에 안쪽 그림자 추가 (배경과 구분)
         var white: CGFloat = 0
         color.getWhite(&white, alpha: nil)
         if white > 0.9 {
@@ -434,13 +431,11 @@ final class CardDecorateView: UIView {
         actionPublisher.send(.subTextToggled(isSubVisible))
     }
 
-    /// 한쪽이 숨겨져 있을 때 반대쪽 버튼을 잠금 상태로 표시
     private func updateLockedState() {
-        let mainLocked = !isSubVisible   // 서브가 없으면 메인 잠금
-        let subLocked  = !isMainVisible  // 메인이 없으면 서브 잠금
+        let mainLocked = !isSubVisible
+        let subLocked  = !isMainVisible
         setToggleLocked(mainToggleButton, locked: mainLocked)
         setToggleLocked(subToggleButton,  locked: subLocked)
-        // 잠긴 버튼이 생기는 시점에 미리 워밍업 → 탭 시 딜레이 없음
         if mainLocked || subLocked {
             feedbackGenerator.prepare()
         }

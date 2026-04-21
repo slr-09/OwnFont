@@ -3,6 +3,7 @@
 //  OwnFont
 //
 
+import PhotosUI
 import UIKit
 import SnapKit
 
@@ -18,46 +19,21 @@ final class CardHomeViewController: UIViewController {
         return l
     }()
 
-    private let memoCard: UIView = {
-        let v = UIView()
-        v.backgroundColor = .indigoSubtle
-        v.layer.cornerRadius = 20
-        v.layer.shadowColor = UIColor.indigo.cgColor
-        v.layer.shadowOpacity = 0.1
-        v.layer.shadowOffset = CGSize(width: 0, height: 2)
-        v.layer.shadowRadius = 8
-        return v
-    }()
+    private let memoCard = CardHomeViewController.makeEntryCard(
+        iconName: "doc.text",
+        accentColor: .indigo,
+        subtleColor: .indigoSubtle,
+        title: "메모지 꾸미기",
+        subtitle: "예쁜 메모지에 글씨를 적어보세요"
+    )
 
-    private let cardIcon: UIImageView = {
-        let cfg = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        let iv = UIImageView(image: UIImage(systemName: "doc.text", withConfiguration: cfg))
-        iv.tintColor = .indigo
-        return iv
-    }()
-
-    private let chevronIcon: UIImageView = {
-        let cfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-        let iv = UIImageView(image: UIImage(systemName: "chevron.right", withConfiguration: cfg))
-        iv.tintColor = .textHint
-        return iv
-    }()
-
-    private let cardTitle: UILabel = {
-        let l = UILabel()
-        l.text = "메모지 꾸미기"
-        l.font = .bodyHeader
-        l.textColor = .textPrimary
-        return l
-    }()
-
-    private let cardSubtitle: UILabel = {
-        let l = UILabel()
-        l.text = "예쁜 메모지에 글씨를 적어보세요"
-        l.font = .body
-        l.textColor = .iconInactive
-        return l
-    }()
+    private let photoCard = CardHomeViewController.makeEntryCard(
+        iconName: "photo.on.rectangle.angled",
+        accentColor: .primary,
+        subtleColor: .primarySubtle,
+        title: "사진 꾸미기",
+        subtitle: "사진 위에 나만의 폰트로 글씨를 써보세요"
+    )
 
     // MARK: - Lifecycle
 
@@ -78,79 +54,169 @@ final class CardHomeViewController: UIViewController {
     private func setupLayout() {
         view.addSubview(titleLabel)
         view.addSubview(memoCard)
-
-        let topRow = UIView()
-        memoCard.addSubview(topRow)
-        topRow.addSubview(cardIcon)
-        topRow.addSubview(chevronIcon)
-        memoCard.addSubview(cardTitle)
-        memoCard.addSubview(cardSubtitle)
+        view.addSubview(photoCard)
 
         titleLabel.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide).inset(20)
             make.leading.equalToSuperview().inset(20)
         }
-
         memoCard.snp.makeConstraints { make in
             make.top.equalTo(titleLabel.snp.bottom).offset(20)
             make.horizontalEdges.equalToSuperview().inset(20)
-            make.height.equalTo(160)
+            make.height.equalTo(120)
         }
-
-        topRow.snp.makeConstraints { make in
-            make.top.horizontalEdges.equalToSuperview().inset(18)
-            make.height.equalTo(24)
-        }
-        cardIcon.snp.makeConstraints { make in
-            make.leading.centerY.equalToSuperview()
-            make.size.equalTo(24)
-        }
-        chevronIcon.snp.makeConstraints { make in
-            make.trailing.centerY.equalToSuperview()
-            make.width.equalTo(10)
-            make.height.equalTo(18)
-        }
-
-        cardTitle.snp.makeConstraints { make in
-            make.leading.equalToSuperview().inset(18)
-            make.bottom.equalTo(cardSubtitle.snp.top).offset(-4)
-        }
-        cardSubtitle.snp.makeConstraints { make in
-            make.leading.equalToSuperview().inset(18)
-            make.bottom.equalToSuperview().inset(18)
+        photoCard.snp.makeConstraints { make in
+            make.top.equalTo(memoCard.snp.bottom).offset(14)
+            make.horizontalEdges.equalToSuperview().inset(20)
+            make.height.equalTo(120)
         }
     }
 
     // MARK: - Actions
 
     private func setupActions() {
-        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(memoCardPressed(_:)))
-        longPress.minimumPressDuration = 0
-        memoCard.addGestureRecognizer(longPress)
+        addCardGesture(to: memoCard) { [weak self] in
+            let vc = CardDecorateViewController()
+            self?.navigationController?.pushViewController(vc, animated: true)
+        }
+        addCardGesture(to: photoCard) { [weak self] in
+            self?.presentPhotoPicker()
+        }
     }
 
-    @objc private func memoCardPressed(_ gesture: UILongPressGestureRecognizer) {
+    private func addCardGesture(to card: UIView, onTap: @escaping () -> Void) {
+        let gesture = CardTapGesture(target: self, action: #selector(handleCardPress(_:)))
+        gesture.onTap = onTap
+        card.addGestureRecognizer(gesture)
+    }
+
+    @objc private func handleCardPress(_ gesture: CardTapGesture) {
         switch gesture.state {
         case .began:
             UIView.animate(withDuration: 0.15) {
-                self.memoCard.transform = CGAffineTransform(scaleX: 0.97, y: 0.97)
+                gesture.view?.transform = CGAffineTransform(scaleX: 0.97, y: 0.97)
             }
         case .ended:
             UIView.animate(withDuration: 0.15) {
-                self.memoCard.transform = .identity
+                gesture.view?.transform = .identity
             } completion: { _ in
-                let point = gesture.location(in: self.memoCard)
-                if self.memoCard.bounds.contains(point) {
-                    let vc = CardDecorateViewController()
-                    self.navigationController?.pushViewController(vc, animated: true)
-                }
+                guard let card = gesture.view,
+                      card.bounds.contains(gesture.location(in: card)) else { return }
+                gesture.onTap?()
             }
         case .cancelled, .failed:
             UIView.animate(withDuration: 0.15) {
-                self.memoCard.transform = .identity
+                gesture.view?.transform = .identity
             }
         default:
             break
         }
+    }
+
+    // MARK: - Photo Picker
+
+    private func presentPhotoPicker() {
+        var config = PHPickerConfiguration(photoLibrary: .shared())
+        config.filter = .images
+        config.selectionLimit = 1
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = self
+        present(picker, animated: true)
+    }
+
+    // MARK: - Factory
+
+    private static func makeEntryCard(
+        iconName: String,
+        accentColor: UIColor,
+        subtleColor: UIColor,
+        title: String,
+        subtitle: String
+    ) -> UIView {
+        let card = UIView()
+        card.backgroundColor = subtleColor
+        card.layer.cornerRadius = 20
+        card.layer.shadowColor = accentColor.cgColor
+        card.layer.shadowOpacity = 0.1
+        card.layer.shadowOffset = CGSize(width: 0, height: 2)
+        card.layer.shadowRadius = 8
+
+        let cfg = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
+        let iconView = UIImageView(image: UIImage(systemName: iconName, withConfiguration: cfg))
+        iconView.tintColor = accentColor
+
+        let chevronCfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        let chevron = UIImageView(image: UIImage(systemName: "chevron.right", withConfiguration: chevronCfg))
+        chevron.tintColor = .textHint
+
+        let topRow = UIView()
+        topRow.addSubview(iconView)
+        topRow.addSubview(chevron)
+
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .bodyHeader
+        titleLabel.textColor = .textPrimary
+
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = subtitle
+        subtitleLabel.font = .body
+        subtitleLabel.textColor = .iconInactive
+
+        card.addSubview(topRow)
+        card.addSubview(titleLabel)
+        card.addSubview(subtitleLabel)
+
+        topRow.snp.makeConstraints { make in
+            make.top.horizontalEdges.equalToSuperview().inset(18)
+            make.height.equalTo(24)
+        }
+        iconView.snp.makeConstraints { make in
+            make.leading.centerY.equalToSuperview()
+            make.size.equalTo(24)
+        }
+        chevron.snp.makeConstraints { make in
+            make.trailing.centerY.equalToSuperview()
+            make.width.equalTo(10)
+            make.height.equalTo(18)
+        }
+        titleLabel.snp.makeConstraints { make in
+            make.leading.equalToSuperview().inset(18)
+            make.bottom.equalTo(subtitleLabel.snp.top).offset(-4)
+        }
+        subtitleLabel.snp.makeConstraints { make in
+            make.leading.equalToSuperview().inset(18)
+            make.bottom.equalToSuperview().inset(18)
+        }
+
+        return card
+    }
+}
+
+// MARK: - PHPickerViewControllerDelegate
+
+extension CardHomeViewController: PHPickerViewControllerDelegate {
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.dismiss(animated: true)
+        guard let provider = results.first?.itemProvider,
+              provider.canLoadObject(ofClass: UIImage.self) else { return }
+        provider.loadObject(ofClass: UIImage.self) { [weak self] object, _ in
+            guard let self, let image = object as? UIImage else { return }
+            DispatchQueue.main.async {
+                let vc = PhotoDecorateViewController(photo: image)
+                self.navigationController?.pushViewController(vc, animated: true)
+            }
+        }
+    }
+}
+
+// MARK: - CardTapGesture
+
+private final class CardTapGesture: UILongPressGestureRecognizer {
+    var onTap: (() -> Void)?
+
+    override init(target: Any?, action: Selector?) {
+        super.init(target: target, action: action)
+        minimumPressDuration = 0
     }
 }

@@ -10,6 +10,23 @@ final class MemoCardView: UIView {
 
     // MARK: - Subviews
 
+    private let backgroundImageView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFill
+        iv.clipsToBounds = true
+        iv.layer.cornerRadius = 20
+        iv.isHidden = true
+        return iv
+    }()
+
+    private let photoOverlayView: UIView = {
+        let v = UIView()
+        v.backgroundColor = UIColor.black.withAlphaComponent(0.3)
+        v.layer.cornerRadius = 20
+        v.isHidden = true
+        return v
+    }()
+
     private let headerRow: UIView = {
         let v = UIView()
         return v
@@ -74,6 +91,15 @@ final class MemoCardView: UIView {
     }
 
     private func setupLayout() {
+        insertSubview(backgroundImageView, at: 0)
+        insertSubview(photoOverlayView, at: 1)
+        backgroundImageView.setContentHuggingPriority(.defaultLow - 1, for: .horizontal)
+        backgroundImageView.setContentHuggingPriority(.defaultLow - 1, for: .vertical)
+        backgroundImageView.setContentCompressionResistancePriority(.defaultLow - 1, for: .horizontal)
+        backgroundImageView.setContentCompressionResistancePriority(.defaultLow - 1, for: .vertical)
+        backgroundImageView.snp.makeConstraints { make in make.edges.equalToSuperview() }
+        photoOverlayView.snp.makeConstraints { make in make.edges.equalToSuperview() }
+
         addSubview(headerRow)
         headerRow.addSubview(dateLabel)
         addSubview(divider)
@@ -110,6 +136,17 @@ final class MemoCardView: UIView {
         let range = NSRange(location: 0, length: tv.textStorage.length)
         tv.textStorage.addAttribute(.foregroundColor, value: color, range: range)
         tv.invalidateIntrinsicContentSize()
+    }
+
+    func setBackgroundImage(_ image: UIImage?) {
+        if let image {
+            backgroundImageView.image = image
+            backgroundImageView.isHidden = false
+            photoOverlayView.isHidden = false
+        } else {
+            backgroundImageView.isHidden = true
+            photoOverlayView.isHidden = true
+        }
     }
 
     func setBackground(_ color: UIColor, stroke: UIColor) {
