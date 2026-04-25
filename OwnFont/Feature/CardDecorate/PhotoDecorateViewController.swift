@@ -18,7 +18,7 @@ final class PhotoDecorateViewController: UIViewController {
     private var currentFontSize: CGFloat = 36
 
     private static let stickerColors: [UIColor] = [
-        .white, .black, .systemYellow, .systemPink, .systemCyan, .systemOrange
+        .white, .black, .systemPink, .systemOrange, .systemGreen, .systemYellow, .systemBlue, .systemPurple
     ]
     private static let fontSizes: [CGFloat] = [24, 36, 52]
     private static let overlayTag = 9999
@@ -315,7 +315,7 @@ final class PhotoDecorateViewController: UIViewController {
         controlsBar.snp.makeConstraints { make in
             make.horizontalEdges.equalToSuperview()
             make.bottom.equalToSuperview()
-            make.height.equalTo(56)
+            make.height.equalTo(88)
         }
         return controlsBar
     }
@@ -420,16 +420,16 @@ final class PhotoDecorateViewController: UIViewController {
         bar.backgroundColor = UIColor.black.withAlphaComponent(0.4)
         let colorStack = makeColorStack()
         let sizeSegment = makeSizeSegment()
-        bar.addSubview(colorStack)
         bar.addSubview(sizeSegment)
-        colorStack.snp.makeConstraints { make in
-            make.leading.equalToSuperview().inset(20)
-            make.centerY.equalToSuperview()
-        }
+        bar.addSubview(colorStack)
         sizeSegment.snp.makeConstraints { make in
             make.trailing.equalToSuperview().inset(20)
-            make.centerY.equalToSuperview()
+            make.top.equalToSuperview().inset(8)
             make.width.equalTo(140)
+        }
+        colorStack.snp.makeConstraints { make in
+            make.leading.equalToSuperview().inset(20)
+            make.bottom.equalToSuperview().inset(14)
         }
         return bar
     }
