@@ -89,13 +89,15 @@ final class PhotoDecorateViewController: UIViewController {
         iv.contentMode = .scaleAspectFit
         iv.clipsToBounds = true
         iv.layer.cornerRadius = 16
+        iv.isUserInteractionEnabled = true
         return iv
     }()
 
     private let stickerCanvas: UIView = {
         let v = UIView()
         v.backgroundColor = .clear
-        v.clipsToBounds = false
+        v.clipsToBounds = true
+        
         return v
     }()
 
@@ -128,12 +130,29 @@ final class PhotoDecorateViewController: UIViewController {
         navigationController?.interactivePopGestureRecognizer?.delegate = nil
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateStickerCanvasFrame()
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         removeKeyboardObservers()
     }
 
     // MARK: - Layout
+
+    private func updateStickerCanvasFrame() {
+        guard let image = photoImageView.image else { return }
+        let viewSize = photoImageView.bounds.size
+        guard viewSize.width > 0, viewSize.height > 0 else { return }
+        let imageSize = image.size
+        let scale = min(viewSize.width / imageSize.width, viewSize.height / imageSize.height)
+        let scaledSize = CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
+        let x = (viewSize.width - scaledSize.width) / 2
+        let y = (viewSize.height - scaledSize.height) / 2
+        stickerCanvas.frame = CGRect(x: x, y: y, width: scaledSize.width, height: scaledSize.height)
+    }
 
     private func setupLayout() {
         view.addSubview(navBarView)
@@ -142,7 +161,7 @@ final class PhotoDecorateViewController: UIViewController {
         navBarView.addSubview(textButton)
         navBarView.addSubview(saveButton)
         view.addSubview(photoImageView)
-        view.addSubview(stickerCanvas)
+        photoImageView.addSubview(stickerCanvas)
 
         navBarView.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide)
@@ -168,13 +187,11 @@ final class PhotoDecorateViewController: UIViewController {
             make.size.equalTo(36)
         }
 
-        let sharedConstraints = { (make: ConstraintMaker) in
-            make.top.equalTo(self.navBarView.snp.bottom).offset(20)
+        photoImageView.snp.makeConstraints { make in
+            make.top.equalTo(navBarView.snp.bottom).offset(20)
             make.horizontalEdges.equalToSuperview().inset(20)
-            make.bottom.equalTo(self.view.safeAreaLayoutGuide).inset(20)
+            make.bottom.equalTo(view.safeAreaLayoutGuide).inset(20)
         }
-        photoImageView.snp.makeConstraints(sharedConstraints)
-        stickerCanvas.snp.makeConstraints(sharedConstraints)
     }
 
     // MARK: - Actions
@@ -509,10 +526,13 @@ final class PhotoDecorateViewController: UIViewController {
     private func renderCompositeImage() -> Data {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false
-        let renderer = UIGraphicsImageRenderer(bounds: photoImageView.bounds, format: format)
+        let renderer = UIGraphicsImageRenderer(bounds: stickerCanvas.bounds, format: format)
         return renderer.pngData { _ in
-            photoImageView.drawHierarchy(in: photoImageView.bounds, afterScreenUpdates: true)
-            stickerCanvas.drawHierarchy(in: stickerCanvas.bounds, afterScreenUpdates: true)
+            let offsetRect = CGRect(
+                origin: CGPoint(x: -stickerCanvas.frame.minX, y: -stickerCanvas.frame.minY),
+                size: photoImageView.bounds.size
+            )
+            photoImageView.drawHierarchy(in: offsetRect, afterScreenUpdates: true)
         }
     }
 
