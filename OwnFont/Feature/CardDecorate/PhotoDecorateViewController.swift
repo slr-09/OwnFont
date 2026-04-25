@@ -13,11 +13,16 @@ final class PhotoDecorateViewController: UIViewController {
 
     private let photo: UIImage
     private var editingSticker: TextStickerView?
+    private weak var overlayTextView: UITextView?
+    private var currentTextColor: UIColor = .white
+    private var currentFontSize: CGFloat = 36
 
     private static let stickerColors: [UIColor] = [
         .white, .black, .systemYellow, .systemPink, .systemCyan, .systemOrange
     ]
     private static let fontSizes: [CGFloat] = [24, 36, 52]
+    private static let overlayTag = 9999
+    private static let controlsBarTag = 9998
 
     // MARK: - Nav Bar
 
@@ -113,6 +118,7 @@ final class PhotoDecorateViewController: UIViewController {
         setupLayout()
         setupActions()
         photoImageView.image = photo
+        setupKeyboardObservers()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -120,6 +126,11 @@ final class PhotoDecorateViewController: UIViewController {
         navigationController?.setNavigationBarHidden(true, animated: false)
         navigationController?.interactivePopGestureRecognizer?.isEnabled = true
         navigationController?.interactivePopGestureRecognizer?.delegate = nil
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        removeKeyboardObservers()
     }
 
     // MARK: - Layout
@@ -233,9 +244,259 @@ final class PhotoDecorateViewController: UIViewController {
         }
     }
 
-    // MARK: - Text Edit Overlay (TBD)
+    // MARK: - Text Edit Overlay
 
-    private func showTextEditOverlay(editing sticker: TextStickerView?) {}
+    private func showTextEditOverlay(editing sticker: TextStickerView?) {
+        editingSticker = sticker
+        if let s = sticker {
+            currentTextColor = s.stickerColor
+            currentFontSize = s.stickerFontSize
+        }
+
+        let overlay = buildOverlayContainer()
+        let (closeBtn, doneBtn) = addOverlayTopBar(to: overlay)
+        let controlsBar = addOverlayControlsBar(to: overlay)
+        addOverlayTextView(to: overlay, below: closeBtn, above: controlsBar, editing: sticker)
+
+        closeBtn.addTarget(self, action: #selector(dismissTextOverlay), for: .touchUpInside)
+        doneBtn.addTarget(self, action: #selector(commitTextOverlay), for: .touchUpInside)
+
+        overlay.alpha = 0
+        view.addSubview(overlay)
+        UIView.animate(withDuration: 0.2) { overlay.alpha = 1 }
+        overlayTextView?.becomeFirstResponder()
+    }
+
+    private func buildOverlayContainer() -> UIView {
+        let overlay = UIView(frame: view.bounds)
+        overlay.backgroundColor = UIColor.black.withAlphaComponent(0.75)
+        overlay.tag = Self.overlayTag
+        return overlay
+    }
+
+    private func addOverlayTopBar(to overlay: UIView) -> (close: UIButton, done: UIButton) {
+        let closeBtn = makeOverlayIconButton(systemName: "xmark")
+        let doneBtn = makeOverlayTextButton(title: "완료")
+        overlay.addSubview(closeBtn)
+        overlay.addSubview(doneBtn)
+        closeBtn.snp.makeConstraints { make in
+            make.leading.equalToSuperview().inset(20)
+            make.top.equalTo(overlay.safeAreaLayoutGuide).inset(10)
+            make.size.equalTo(36)
+        }
+        doneBtn.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(20)
+            make.centerY.equalTo(closeBtn)
+        }
+        return (closeBtn, doneBtn)
+    }
+
+    private func addOverlayControlsBar(to overlay: UIView) -> UIView {
+        let controlsBar = makeControlsBar()
+        controlsBar.tag = Self.controlsBarTag
+        overlay.addSubview(controlsBar)
+        controlsBar.snp.makeConstraints { make in
+            make.horizontalEdges.equalToSuperview()
+            make.bottom.equalToSuperview()
+            make.height.equalTo(56)
+        }
+        return controlsBar
+    }
+
+    private func addOverlayTextView(to overlay: UIView, below topAnchor: UIView, above bottomAnchor: UIView, editing sticker: TextStickerView?) {
+        let tv = makeOverlayTextView()
+        if let s = sticker { tv.text = s.stickerText }
+        overlayTextView = tv
+        overlay.addSubview(tv)
+        tv.snp.makeConstraints { make in
+            make.top.equalTo(topAnchor.snp.bottom).offset(16)
+            make.horizontalEdges.equalToSuperview().inset(20)
+            make.bottom.equalTo(bottomAnchor.snp.top).offset(-12)
+        }
+    }
+
+    @objc private func dismissTextOverlay() {
+        view.endEditing(true)
+        removeTextOverlay()
+        editingSticker = nil
+    }
+
+    @objc private func commitTextOverlay() {
+        guard let tv = overlayTextView,
+              let text = tv.text,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            dismissTextOverlay()
+            return
+        }
+
+        view.endEditing(true)
+        removeTextOverlay()
+
+        if let existing = editingSticker {
+            existing.configure(text: text, fontSize: currentFontSize, color: currentTextColor)
+        } else {
+            addNewSticker(text: text, fontSize: currentFontSize, color: currentTextColor)
+        }
+        editingSticker = nil
+    }
+
+    private func removeTextOverlay() {
+        guard let overlay = view.viewWithTag(Self.overlayTag) else { return }
+        UIView.animate(withDuration: 0.15, animations: { overlay.alpha = 0 }) { _ in
+            overlay.removeFromSuperview()
+        }
+    }
+
+    // MARK: - Overlay UI Factories
+
+    private func makeOverlayTextView() -> UITextView {
+        let storage = NSTextStorage()
+        let layoutManager = GlyphLayoutManager()
+        let container = NSTextContainer()
+        container.widthTracksTextView = true
+        layoutManager.addTextContainer(container)
+        storage.addLayoutManager(layoutManager)
+
+        let tv = UITextView(frame: .zero, textContainer: container)
+        tv.font = .custom(size: currentFontSize)
+        tv.textColor = currentTextColor
+        tv.backgroundColor = .clear
+        tv.textContainerInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
+        tv.autocorrectionType = .no
+        tv.autocapitalizationType = .none
+        tv.spellCheckingType = .no
+        tv.textAlignment = .center
+        tv.tintColor = .white
+        return tv
+    }
+
+    private func makeOverlayIconButton(systemName: String) -> UIButton {
+        let btn = UIButton(type: .system)
+        btn.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        btn.layer.cornerRadius = 18
+        btn.tintColor = .white
+        let cfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        btn.setImage(UIImage(systemName: systemName, withConfiguration: cfg), for: .normal)
+        return btn
+    }
+
+    private func makeOverlayTextButton(title: String) -> UIButton {
+        let btn = UIButton(type: .system)
+        var config = UIButton.Configuration.plain()
+        config.attributedTitle = AttributedString(
+            title,
+            attributes: AttributeContainer([
+                .font: UIFont.bodyHeader,
+                .foregroundColor: UIColor.white
+            ])
+        )
+        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+        btn.configuration = config
+        btn.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        btn.layer.cornerRadius = 16
+        return btn
+    }
+
+    private func makeControlsBar() -> UIView {
+        let bar = UIView()
+        bar.backgroundColor = UIColor.black.withAlphaComponent(0.4)
+        let colorStack = makeColorStack()
+        let sizeSegment = makeSizeSegment()
+        bar.addSubview(colorStack)
+        bar.addSubview(sizeSegment)
+        colorStack.snp.makeConstraints { make in
+            make.leading.equalToSuperview().inset(20)
+            make.centerY.equalToSuperview()
+        }
+        sizeSegment.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(20)
+            make.centerY.equalToSuperview()
+            make.width.equalTo(140)
+        }
+        return bar
+    }
+
+    private func makeColorStack() -> UIStackView {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.spacing = 10
+        stack.alignment = .center
+        for (i, color) in Self.stickerColors.enumerated() {
+            let chip = UIButton(type: .custom)
+            chip.backgroundColor = color
+            chip.layer.cornerRadius = 13
+            chip.layer.borderWidth = (color == .white || color == .black) ? 1 : 0
+            chip.layer.borderColor = UIColor.gray.cgColor
+            chip.tag = i
+            chip.addTarget(self, action: #selector(colorChipTapped(_:)), for: .touchUpInside)
+            stack.addArrangedSubview(chip)
+            chip.snp.makeConstraints { $0.size.equalTo(26) }
+        }
+        return stack
+    }
+
+    private func makeSizeSegment() -> UISegmentedControl {
+        let sc = UISegmentedControl(items: ["소", "중", "대"])
+        sc.selectedSegmentIndex = Self.fontSizes.firstIndex(of: currentFontSize) ?? 1
+        sc.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .normal)
+        sc.setTitleTextAttributes([.foregroundColor: UIColor.black], for: .selected)
+        sc.selectedSegmentTintColor = .white
+        sc.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        sc.addTarget(self, action: #selector(sizeControlChanged(_:)), for: .valueChanged)
+        return sc
+    }
+
+    // MARK: - Overlay Control Handlers
+
+    @objc private func colorChipTapped(_ sender: UIButton) {
+        currentTextColor = Self.stickerColors[sender.tag]
+        guard let tv = overlayTextView else { return }
+        tv.textColor = currentTextColor
+        if let text = tv.text, !text.isEmpty {
+            tv.textStorage.addAttribute(.foregroundColor, value: currentTextColor,
+                                        range: NSRange(location: 0, length: (text as NSString).length))
+        }
+    }
+
+    @objc private func sizeControlChanged(_ sender: UISegmentedControl) {
+        currentFontSize = Self.fontSizes[sender.selectedSegmentIndex]
+        guard let tv = overlayTextView else { return }
+        tv.font = .custom(size: currentFontSize)
+        if let text = tv.text, !text.isEmpty {
+            tv.textStorage.addAttribute(.font, value: UIFont.custom(size: currentFontSize),
+                                        range: NSRange(location: 0, length: (text as NSString).length))
+        }
+    }
+
+    // MARK: - Keyboard
+
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillChange(_:)),
+                                               name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillChange(_:)),
+                                               name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    private func removeKeyboardObservers() {
+        NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    @objc private func keyboardWillChange(_ n: Notification) {
+        guard let keyboardFrame = n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
+              let duration = n.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
+              let overlay = view.viewWithTag(Self.overlayTag),
+              let controlsBar = overlay.viewWithTag(Self.controlsBarTag) else { return }
+
+        let inset = n.name == UIResponder.keyboardWillShowNotification ? keyboardFrame.height : 0
+        UIView.animate(withDuration: duration) {
+            controlsBar.snp.updateConstraints { make in
+                make.bottom.equalToSuperview().inset(inset)
+            }
+            overlay.layoutIfNeeded()
+        }
+    }
 
     // MARK: - Save
 
