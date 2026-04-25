@@ -1,0 +1,192 @@
+//
+//  TextStickerView.swift
+//  OwnFont
+//
+
+import UIKit
+import SnapKit
+
+final class TextStickerView: UIView {
+
+    var onDoubleTap: (() -> Void)?
+    var onDelete: ((TextStickerView) -> Void)?
+
+    private(set) var stickerText: String = ""
+    private(set) var stickerFontSize: CGFloat = 36
+    private(set) var stickerColor: UIColor = .white
+
+    var isStickerSelected: Bool = false {
+        didSet {
+            deleteButton.isHidden = !isStickerSelected
+            layer.borderWidth = isStickerSelected ? 1 : 0
+        }
+    }
+
+    private lazy var textView: UITextView = makeTextView()
+    private lazy var deleteButton: UIButton = makeDeleteButton()
+    private var currentScale: CGFloat = 1
+    private var currentRotation: CGFloat = 0
+
+    // MARK: - Init
+
+    init(text: String, fontSize: CGFloat, color: UIColor) {
+        super.init(frame: .zero)
+        layer.borderColor = UIColor.primary.withAlphaComponent(0.7).cgColor
+        setupSubviews()
+        setupGestures()
+        configure(text: text, fontSize: fontSize, color: color)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    // MARK: - Setup
+
+    private func setupSubviews() {
+        addSubview(textView)
+        addSubview(deleteButton)
+        textView.snp.makeConstraints { $0.edges.equalToSuperview() }
+        deleteButton.snp.makeConstraints { make in
+            make.top.equalToSuperview().offset(-14)
+            make.trailing.equalToSuperview().offset(14)
+            make.size.equalTo(28)
+        }
+        deleteButton.addTarget(self, action: #selector(handleDelete), for: .touchUpInside)
+    }
+
+    private func setupGestures() {
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
+        doubleTap.numberOfTapsRequired = 2
+
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        tap.require(toFail: doubleTap)
+
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan))
+
+        let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch))
+        pinch.delegate = self
+
+        let rotation = UIRotationGestureRecognizer(target: self, action: #selector(handleRotation))
+        rotation.delegate = self
+
+        [doubleTap, tap, pan, pinch, rotation].forEach { addGestureRecognizer($0) }
+    }
+
+    // MARK: - Configure
+
+    func configure(text: String, fontSize: CGFloat, color: UIColor) {
+        stickerText = text
+        stickerFontSize = fontSize
+        stickerColor = color
+
+        textView.attributedText = NSAttributedString(
+            string: text,
+            attributes: [.font: UIFont.custom(size: fontSize), .foregroundColor: color]
+        )
+        textView.textAlignment = .center
+
+        let maxWidth = min(UIScreen.main.bounds.width - 40, 300.0)
+        let inset = textView.textContainerInset
+        let measured = measureFinalSize(maxWidth: maxWidth)
+
+        frame.size = CGSize(
+            width: max(measured.width, fontSize + inset.left + inset.right),
+            height: max(measured.height, fontSize + inset.top + inset.bottom)
+        )
+    }
+
+    // MARK: - Size Measurement
+
+    private func measureFinalSize(maxWidth: CGFloat) -> CGSize {
+        let inset = textView.textContainerInset
+
+        textView.textContainer.size = CGSize(width: 10000, height: 10000)
+        let naturalSize = textView.sizeThatFits(CGSize(width: 10000, height: 10000))
+
+        if naturalSize.width <= maxWidth {
+            textView.textContainer.size = CGSize(
+                width: naturalSize.width - inset.left - inset.right,
+                height: .greatestFiniteMagnitude
+            )
+            return CGSize(width: ceil(naturalSize.width), height: ceil(naturalSize.height))
+        } else {
+            textView.textContainer.size = CGSize(
+                width: maxWidth - inset.left - inset.right,
+                height: .greatestFiniteMagnitude
+            )
+            let wrappedSize = textView.sizeThatFits(CGSize(width: maxWidth, height: 10000))
+            return CGSize(width: maxWidth, height: ceil(wrappedSize.height))
+        }
+    }
+
+    // MARK: - Gesture Handlers
+
+    @objc private func handleTap() {
+        isStickerSelected.toggle()
+        if isStickerSelected { superview?.bringSubviewToFront(self) }
+    }
+
+    @objc private func handleDoubleTap() { onDoubleTap?() }
+    @objc private func handleDelete() { onDelete?(self) }
+
+    @objc private func handlePan(_ r: UIPanGestureRecognizer) {
+        guard let sv = superview else { return }
+        let t = r.translation(in: sv)
+        center = CGPoint(x: center.x + t.x, y: center.y + t.y)
+        r.setTranslation(.zero, in: sv)
+    }
+
+    @objc private func handlePinch(_ r: UIPinchGestureRecognizer) {
+        currentScale = max(0.3, min(currentScale * r.scale, 5))
+        r.scale = 1
+        applyTransform()
+    }
+
+    @objc private func handleRotation(_ r: UIRotationGestureRecognizer) {
+        currentRotation += r.rotation
+        r.rotation = 0
+        applyTransform()
+    }
+
+    private func applyTransform() {
+        transform = CGAffineTransform(rotationAngle: currentRotation).scaledBy(x: currentScale, y: currentScale)
+    }
+
+    // MARK: - Factory
+
+    private func makeTextView() -> UITextView {
+        let storage = NSTextStorage()
+        let layoutManager = GlyphLayoutManager()
+        let container = NSTextContainer()
+        container.widthTracksTextView = false
+        layoutManager.addTextContainer(container)
+        storage.addLayoutManager(layoutManager)
+
+        let tv = UITextView(frame: .zero, textContainer: container)
+        tv.backgroundColor = .clear
+        tv.isEditable = false
+        tv.isSelectable = false
+        tv.isScrollEnabled = false
+        tv.textContainerInset = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
+        return tv
+    }
+
+    private func makeDeleteButton() -> UIButton {
+        let btn = UIButton(type: .system)
+        let cfg = UIImage.SymbolConfiguration(pointSize: 16, weight: .bold)
+        btn.setImage(UIImage(systemName: "xmark.circle.fill", withConfiguration: cfg), for: .normal)
+        btn.tintColor = .white
+        btn.layer.shadowColor = UIColor.black.cgColor
+        btn.layer.shadowRadius = 3
+        btn.layer.shadowOpacity = 0.7
+        btn.layer.shadowOffset = .zero
+        btn.isHidden = true
+        return btn
+    }
+}
+
+// MARK: - UIGestureRecognizerDelegate
+
+extension TextStickerView: UIGestureRecognizerDelegate {
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+}
