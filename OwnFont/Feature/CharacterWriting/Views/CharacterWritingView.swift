@@ -17,6 +17,7 @@ final class CharacterWritingView: UIView {
         case next, done, save
         case penSelected, eraserSelected
         case undo, clear
+        case clearAll
         case slotTapped(Int)
     }
 
@@ -46,6 +47,16 @@ final class CharacterWritingView: UIView {
         l.font = .cardHeader
         l.textColor = .textPrimary
         return l
+    }()
+
+    private let clearAllCategoryButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.backgroundColor = .surfaceSecondary
+        btn.layer.cornerRadius = 18
+        let cfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        btn.setImage(UIImage(systemName: "trash.slash", withConfiguration: cfg), for: .normal)
+        btn.tintColor = .systemRed
+        return btn
     }()
 
     private let counterBadge: UIView = {
@@ -170,6 +181,7 @@ final class CharacterWritingView: UIView {
         addSubview(navBarView)
         navBarView.addSubview(backButton)
         navBarView.addSubview(navTitleLabel)
+        navBarView.addSubview(clearAllCategoryButton)
         navBarView.addSubview(counterBadge)
         counterBadge.addSubview(counterLabel)
 
@@ -205,8 +217,13 @@ final class CharacterWritingView: UIView {
             make.leading.equalTo(backButton.snp.trailing).offset(12)
             make.centerY.equalToSuperview()
         }
-        counterBadge.snp.makeConstraints { make in
+        clearAllCategoryButton.snp.makeConstraints { make in
             make.trailing.equalToSuperview().inset(20)
+            make.centerY.equalToSuperview()
+            make.size.equalTo(36)
+        }
+        counterBadge.snp.makeConstraints { make in
+            make.trailing.equalTo(clearAllCategoryButton.snp.leading).offset(-8)
             make.centerY.equalToSuperview()
         }
         counterLabel.snp.makeConstraints { make in
@@ -286,6 +303,7 @@ final class CharacterWritingView: UIView {
 
     private func setupActions() {
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+        clearAllCategoryButton.addTarget(self, action: #selector(handleClearAll), for: .touchUpInside)
         penButton.addTarget(self, action: #selector(handlePen), for: .touchUpInside)
         eraserButton.addTarget(self, action: #selector(handleEraser), for: .touchUpInside)
         undoButton.addTarget(self, action: #selector(handleUndo), for: .touchUpInside)
@@ -293,7 +311,8 @@ final class CharacterWritingView: UIView {
         nextButton.addTarget(self, action: #selector(handleNext), for: .touchUpInside)
     }
 
-    @objc private func handleBack()   { actionPublisher.send(.back) }
+    @objc private func handleBack()      { actionPublisher.send(.back) }
+    @objc private func handleClearAll()  { actionPublisher.send(.clearAll) }
     @objc private func handlePen()    { actionPublisher.send(.penSelected) }
     @objc private func handleEraser() { actionPublisher.send(.eraserSelected) }
     @objc private func handleUndo()   { actionPublisher.send(.undo) }
