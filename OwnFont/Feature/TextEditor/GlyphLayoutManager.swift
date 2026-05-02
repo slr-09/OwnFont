@@ -18,7 +18,7 @@ final class GlyphLayoutManager: NSLayoutManager {
         let end      = NSMaxRange(glyphsToShow)
 
         var sysStart = glyphsToShow.location
-        var customWork: [(index: Int, data: GlyphData)] = []
+        var customWork: [(index: Int, path: CGPath)] = []
 
         for gi in glyphsToShow.location..<end {
             guard gi < total else { break }
@@ -26,13 +26,13 @@ final class GlyphLayoutManager: NSLayoutManager {
             guard ci < fullText.length else { continue }
             let char = fullText.substring(with: NSRange(location: ci, length: 1))
 
-            guard let data = GlyphStore.shared.glyph(for: char) else { continue }
+            guard let path = resolvedPath(for: char) else { continue }
 
             if sysStart < gi {
                 super.drawGlyphs(forGlyphRange: NSRange(location: sysStart, length: gi - sysStart), at: origin)
             }
             sysStart = gi + 1
-            customWork.append((gi, data))
+            customWork.append((gi, path))
         }
 
         if sysStart < end {
@@ -42,7 +42,7 @@ final class GlyphLayoutManager: NSLayoutManager {
         guard !customWork.isEmpty,
               let ctx = UIGraphicsGetCurrentContext() else { return }
 
-        for (gi, glyphData) in customWork {
+        for (gi, normalizedPath) in customWork {
             var effectiveRange = NSRange()
             let lineRect = lineFragmentRect(forGlyphAt: gi, effectiveRange: &effectiveRange)
             let glyphLoc = location(forGlyphAt: gi)
@@ -54,11 +54,8 @@ final class GlyphLayoutManager: NSLayoutManager {
             let attrs = storage.attributes(at: ci, effectiveRange: nil)
             let font  = attrs[.font] as? UIFont ?? .bodyHeader
 
-            // Y축: 폰트 사이즈 기준 (시각적 높이 유지)
             let scaleY = font.pointSize / GlyphNormalizer.emSize
 
-            // X축: 시스템 advance width 기준
-            // 커서는 advance 끝에 놓이므로, 글리프가 advance를 넘으면 커서와 겹침
             let charStr = fullText.substring(with: NSRange(location: ci, length: 1)) as NSString
             let advanceWidth = charStr.size(withAttributes: [.font: font]).width
             let scaleX = advanceWidth / GlyphNormalizer.emSize
@@ -70,7 +67,7 @@ final class GlyphLayoutManager: NSLayoutManager {
                 ty: baselineY + GlyphNormalizer.baselineY * scaleY
             )
             let screenPath = CGMutablePath()
-            screenPath.addPath(glyphData.normalizedPath, transform: transform)
+            screenPath.addPath(normalizedPath, transform: transform)
 
             let color = (attrs[.foregroundColor] as? UIColor ?? .label).cgColor
 
@@ -83,6 +80,42 @@ final class GlyphLayoutManager: NSLayoutManager {
             ctx.strokePath()
             ctx.restoreGState()
         }
+    }
+
+    // MARK: - Private
+
+    /// 문자에 대한 정규화된 CGPath 반환
+    /// - 영문/숫자/기호: GlyphStore 직접 조회
+    /// - 한글 음절: 자모 분해 후 경로 합성
+    private func resolvedPath(for char: String) -> CGPath? {
+        if let data = GlyphStore.shared.glyph(for: char) {
+            return data.normalizedPath
+        }
+        return hangulComposedPath(for: char)
+    }
+
+    private func hangulComposedPath(for char: String) -> CGPath? {
+        guard let first = char.first,
+              let components = HangulComposer.decompose(first) else { return nil }
+
+        let choKey  = HangulComposer.choseongChars[components.cho]
+        let jungKey = HangulComposer.jungseongChars[components.jung]
+
+        guard let choPath  = GlyphStore.shared.glyph(for: choKey)?.normalizedPath,
+              let jungPath = GlyphStore.shared.glyph(for: jungKey)?.normalizedPath
+        else { return nil }
+
+        let jongPath: CGPath?
+        if components.jong >= 0 {
+            let jongKey = HangulComposer.jongseongChars[components.jong]
+            guard let p = GlyphStore.shared.glyph(for: jongKey)?.normalizedPath else { return nil }
+            jongPath = p
+        } else {
+            jongPath = nil
+        }
+
+        return HangulComposer.composePath(cho: choPath, jung: jungPath, jong: jongPath,
+                                          jungIndex: components.jung)
     }
 }
 
