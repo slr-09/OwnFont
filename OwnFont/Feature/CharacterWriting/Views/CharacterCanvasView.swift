@@ -13,12 +13,14 @@ final class CharacterCanvasView: UIView {
 
     private let guideCharLabel: UILabel = {
         let label = UILabel()
-        label.font = .guideLabel
         label.textColor = .primarySubtle
         label.textAlignment = .center
         label.alpha = 0.5
         return label
     }()
+
+    private var lastGuideHeight: CGFloat = 0
+    private var guideBaselineConstraint: Constraint?
 
     let canvasView: PKCanvasView = {
         let canvas = PKCanvasView()
@@ -37,11 +39,12 @@ final class CharacterCanvasView: UIView {
         backgroundColor = .surface
         layer.borderWidth = 1.5
         layer.borderColor = UIColor.surfaceSecondary.cgColor
-        clipsToBounds = true
 
         addSubview(guideCharLabel)
         guideCharLabel.snp.makeConstraints { make in
-            make.center.equalToSuperview()
+            guideBaselineConstraint = make.firstBaseline.equalTo(snp.top).offset(0).constraint
+            make.centerX.equalToSuperview()
+            make.width.lessThanOrEqualToSuperview()
         }
 
         addSubview(canvasView)
@@ -52,6 +55,29 @@ final class CharacterCanvasView: UIView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    // MARK: - Layout
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.height > 0, bounds.height != lastGuideHeight else { return }
+        lastGuideHeight = bounds.height
+        updateGuideLayout()
+    }
+
+    // 캔버스 = em 전체(0~1000) 표현. 베이스라인은 상단 85% 지점.
+    // 가이드 폰트의 ascender가 베이스라인 위 영역(= 0.85 × canvasHeight)을 채우도록 크기 계산
+    private func updateGuideLayout() {
+        let baselineOffset = bounds.height * GlyphNormalizer.baselineRatio
+        guideBaselineConstraint?.update(offset: baselineOffset)
+
+        let fontName = "NoonnuBasicGothicRegular"
+        let refFont = UIFont(name: fontName, size: 100) ?? UIFont.systemFont(ofSize: 100)
+        let ascenderRatio = refFont.ascender / refFont.pointSize
+        let targetSize = baselineOffset / ascenderRatio
+        guideCharLabel.font = UIFont(name: fontName, size: targetSize)
+            ?? UIFont.systemFont(ofSize: targetSize)
     }
 
     // MARK: - Public
@@ -97,12 +123,21 @@ final class CharacterCanvasView: UIView {
         let w = rect.width
         let h = rect.height
 
+        // 격자선
         ctx.setStrokeColor(UIColor.surfaceSecondary.cgColor)
         ctx.setLineWidth(1)
         ctx.move(to: CGPoint(x: 0, y: h / 3));      ctx.addLine(to: CGPoint(x: w, y: h / 3))
         ctx.move(to: CGPoint(x: 0, y: h * 2 / 3));  ctx.addLine(to: CGPoint(x: w, y: h * 2 / 3))
         ctx.move(to: CGPoint(x: w / 3, y: 0));       ctx.addLine(to: CGPoint(x: w / 3, y: h))
         ctx.move(to: CGPoint(x: w * 2 / 3, y: 0));   ctx.addLine(to: CGPoint(x: w * 2 / 3, y: h))
+        ctx.strokePath()
+
+        // 베이스라인 (em y=150 → 캔버스 상단 85% 지점)
+        let baselineY = h * GlyphNormalizer.baselineRatio
+        ctx.setStrokeColor(UIColor.primarySubtle.withAlphaComponent(0.4).cgColor)
+        ctx.setLineWidth(1.5)
+        ctx.move(to: CGPoint(x: 0, y: baselineY))
+        ctx.addLine(to: CGPoint(x: w, y: baselineY))
         ctx.strokePath()
     }
 }

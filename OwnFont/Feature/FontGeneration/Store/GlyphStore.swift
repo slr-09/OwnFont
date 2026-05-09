@@ -31,6 +31,17 @@ final class GlyphStore {
         glyphsDidChange.send()
     }
 
+    func deleteAllGlyphs(for characters: [String]) {
+        characters.forEach { char in
+            if let entity = fetchEntity(for: char) {
+                context.delete(entity)
+            }
+            try? FileManager.default.removeItem(at: drawingURL(for: char))
+        }
+        CoreDataStack.shared.save()
+        glyphsDidChange.send()
+    }
+
     // MARK: - Read
 
     func glyph(for character: String) -> GlyphData? {

@@ -53,12 +53,14 @@ final class GlyphLayoutManager: NSLayoutManager {
             let ci    = characterIndexForGlyph(at: gi)
             let attrs = storage.attributes(at: ci, effectiveRange: nil)
             let font  = attrs[.font] as? UIFont ?? .bodyHeader
+            // Y축: 캔버스의 usable 영역(baseline 위)이 font.ascender와 일치하도록 스케일
+            let scaleY = font.ascender / GlyphNormalizer.usableHeight
 
-            let scaleY = font.pointSize / GlyphNormalizer.emSize
-
+            // X축: 종횡비 유지 (scaleX = scaleY × advanceWidth/pointSize)
+            // 한글처럼 advance ≈ pointSize인 경우 scaleX ≈ scaleY로 왜곡 없음
             let charStr = fullText.substring(with: NSRange(location: ci, length: 1)) as NSString
             let advanceWidth = charStr.size(withAttributes: [.font: font]).width
-            let scaleX = advanceWidth / GlyphNormalizer.emSize
+            let scaleX = font.pointSize > 0 ? scaleY * (advanceWidth / font.pointSize) : scaleY
 
             let transform = CGAffineTransform(
                 a:  scaleX, b: 0,

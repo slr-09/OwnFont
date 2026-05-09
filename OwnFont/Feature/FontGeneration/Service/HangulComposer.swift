@@ -69,7 +69,7 @@ enum HangulComposer {
     /// 모든 입력 경로는 Em Square(0,0)–(1000,1000) Y↑ 좌표계를 사용해야 함.
     static func composePath(cho: CGPath, jung: CGPath, jong: CGPath?, jungIndex: Int) -> CGPath {
         let em: CGFloat   = GlyphNormalizer.emSize      // 1000
-        let base: CGFloat = GlyphNormalizer.baselineY   // 150
+        let base: CGFloat = GlyphNormalizer.baselineY   // 250
         let hasJong       = jong != nil
         let vertical      = isVerticalVowel(jungIndex)
 

@@ -76,6 +76,8 @@ final class CharacterWritingViewController: UIViewController {
                     navigationController?.popViewController(animated: true)
                 case .save:
                     saveAndCycleToNext()
+                case .clearAll:
+                    showClearAllConfirmation()
                 case .slotTapped(let index):
                     navigateTo(index: index)
                 }
@@ -148,6 +150,23 @@ final class CharacterWritingViewController: UIViewController {
             GlyphData(character: character, normalizedPath: normalizedPath, createdAt: Date())
         )
         GlyphStore.shared.saveDrawing(drawing, for: character)
+    }
+
+    private func showClearAllConfirmation() {
+        let alert = UIAlertController(
+            title: "\(category.title) 전체 삭제",
+            message: "저장된 \(category.title) 글자가 모두 삭제됩니다.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
+            guard let self else { return }
+            GlyphStore.shared.deleteAllGlyphs(for: category.characters)
+            completedIndices.removeAll()
+            currentIndex = 0
+            refreshUI()
+        })
+        alert.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alert, animated: true)
     }
 
     private func refreshUI() {
