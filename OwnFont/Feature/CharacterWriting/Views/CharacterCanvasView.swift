@@ -98,7 +98,8 @@ final class CharacterCanvasView: UIView {
     }
 
     func usePen() {
-        canvasView.tool = PKInkingTool(.monoline, color: .black, width: 5)
+        let width: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 3 : 5
+        canvasView.tool = PKInkingTool(.monoline, color: .black, width: width)
     }
 
     func useEraser() {
