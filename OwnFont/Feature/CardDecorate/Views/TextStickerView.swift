@@ -8,19 +8,16 @@ import SnapKit
 
 final class TextStickerView: UIView {
 
-    var onDoubleTap: (() -> Void)?
+    var onTap: (() -> Void)?
     var onDelete: ((TextStickerView) -> Void)?
+
+    func setControlsHidden(_ hidden: Bool) {
+        deleteButton.isHidden = hidden
+    }
 
     private(set) var stickerText: String = ""
     private(set) var stickerFontSize: CGFloat = 36
     private(set) var stickerColor: UIColor = .white
-
-    var isStickerSelected: Bool = false {
-        didSet {
-            deleteButton.isHidden = !isStickerSelected
-            layer.borderWidth = isStickerSelected ? 1 : 0
-        }
-    }
 
     private lazy var textView: UITextView = makeTextView()
     private lazy var deleteButton: UIButton = makeDeleteButton()
@@ -31,7 +28,6 @@ final class TextStickerView: UIView {
 
     init(text: String, fontSize: CGFloat, color: UIColor) {
         super.init(frame: .zero)
-        layer.borderColor = UIColor.primary.withAlphaComponent(0.7).cgColor
         setupSubviews()
         setupGestures()
         configure(text: text, fontSize: fontSize, color: color)
@@ -54,11 +50,7 @@ final class TextStickerView: UIView {
     }
 
     private func setupGestures() {
-        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
-        doubleTap.numberOfTapsRequired = 2
-
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
-        tap.require(toFail: doubleTap)
 
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan))
 
@@ -68,7 +60,7 @@ final class TextStickerView: UIView {
         let rotation = UIRotationGestureRecognizer(target: self, action: #selector(handleRotation))
         rotation.delegate = self
 
-        [doubleTap, tap, pan, pinch, rotation].forEach { addGestureRecognizer($0) }
+        [tap, pan, pinch, rotation].forEach { addGestureRecognizer($0) }
     }
 
     // MARK: - Configure
@@ -121,11 +113,10 @@ final class TextStickerView: UIView {
     // MARK: - Gesture Handlers
 
     @objc private func handleTap() {
-        isStickerSelected.toggle()
-        if isStickerSelected { superview?.bringSubviewToFront(self) }
+        superview?.bringSubviewToFront(self)
+        onTap?()
     }
 
-    @objc private func handleDoubleTap() { onDoubleTap?() }
     @objc private func handleDelete() { onDelete?(self) }
 
     @objc private func handlePan(_ r: UIPanGestureRecognizer) {
@@ -179,7 +170,6 @@ final class TextStickerView: UIView {
         btn.layer.shadowRadius = 3
         btn.layer.shadowOpacity = 0.7
         btn.layer.shadowOffset = .zero
-        btn.isHidden = true
         return btn
     }
 }

@@ -201,8 +201,6 @@ final class PhotoDecorateViewController: UIViewController {
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
         textButton.addTarget(self, action: #selector(handleAddText), for: .touchUpInside)
 
-        let canvasTap = UITapGestureRecognizer(target: self, action: #selector(handleCanvasTap(_:)))
-        stickerCanvas.addGestureRecognizer(canvasTap)
     }
 
     @objc private func handleBack() {
@@ -214,23 +212,10 @@ final class PhotoDecorateViewController: UIViewController {
     }
 
     @objc private func handleAddText() {
-        deselectAllStickers()
         showTextEditOverlay(editing: nil)
     }
 
-    @objc private func handleCanvasTap(_ r: UITapGestureRecognizer) {
-        let location = r.location(in: stickerCanvas)
-        guard stickerCanvas.hitTest(location, with: nil) === stickerCanvas else { return }
-        deselectAllStickers()
-    }
-
     // MARK: - Sticker Management
-
-    private func deselectAllStickers() {
-        stickerCanvas.subviews.compactMap { $0 as? TextStickerView }.forEach {
-            $0.isStickerSelected = false
-        }
-    }
 
     private func addNewSticker(text: String, fontSize: CGFloat, color: UIColor) {
         let sticker = TextStickerView(text: text, fontSize: fontSize, color: color)
@@ -241,15 +226,13 @@ final class PhotoDecorateViewController: UIViewController {
     }
 
     private func bindCallbacks(to sticker: TextStickerView) {
-        sticker.onDoubleTap = { [weak self, weak sticker] in
+        sticker.onTap = { [weak self, weak sticker] in
             guard let sticker else { return }
-            self?.deselectAllStickers()
             self?.showTextEditOverlay(editing: sticker)
         }
-        sticker.onDelete = { [weak self] s in
+        sticker.onDelete = { s in
             UIView.animate(withDuration: 0.15, animations: { s.alpha = 0 }) { _ in
                 s.removeFromSuperview()
-                self?.deselectAllStickers()
             }
         }
     }
@@ -518,8 +501,10 @@ final class PhotoDecorateViewController: UIViewController {
     // MARK: - Save
 
     private func renderAndSave() {
-        deselectAllStickers()
+        let stickers = stickerCanvas.subviews.compactMap { $0 as? TextStickerView }
+        stickers.forEach { $0.setControlsHidden(true) }
         let pngData = renderCompositeImage()
+        stickers.forEach { $0.setControlsHidden(false) }
         saveToPhotoLibrary(pngData)
     }
 
