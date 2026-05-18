@@ -423,7 +423,9 @@ final class PhotoDecorateViewController: UIViewController {
 
     private func addOverlayTextView(to overlay: UIView, below topAnchor: UIView, above bottomAnchor: UIView, editing sticker: TextStickerView?) {
         let tv = makeOverlayTextView()
+        tv.delegate = self
         if let s = sticker { tv.text = s.stickerText }
+        GlyphKerning.apply(to: tv.textStorage)
         overlayTextView = tv
         overlay.addSubview(tv)
         let maxWidth = min(UIScreen.main.bounds.width - 40, 300.0)
@@ -610,6 +612,7 @@ final class PhotoDecorateViewController: UIViewController {
         if let text = tv.text, !text.isEmpty {
             tv.textStorage.addAttribute(.font, value: UIFont.custom(size: currentFontSize),
                                         range: NSRange(location: 0, length: (text as NSString).length))
+            GlyphKerning.apply(to: tv.textStorage)
         }
     }
 
@@ -686,5 +689,14 @@ final class PhotoDecorateViewController: UIViewController {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "확인", style: .default))
         present(alert, animated: true)
+    }
+}
+
+// MARK: - UITextViewDelegate
+
+extension PhotoDecorateViewController: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        guard textView === overlayTextView else { return }
+        GlyphKerning.apply(to: textView.textStorage)
     }
 }

@@ -63,6 +63,7 @@ final class TextStickerView: UIView {
             attributes: [.font: UIFont.custom(size: fontSize), .foregroundColor: color]
         )
         textView.textAlignment = .center
+        GlyphKerning.apply(to: textView.textStorage)
 
         let maxWidth = min(UIScreen.main.bounds.width - 40, 300.0)
         let inset = textView.textContainerInset
