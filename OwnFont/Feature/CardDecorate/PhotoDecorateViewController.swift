@@ -248,14 +248,6 @@ final class PhotoDecorateViewController: UIViewController {
 
     // MARK: - Sticker Management
 
-    private func addNewSticker(text: String, fontSize: CGFloat, color: UIColor) {
-        let sticker = TextStickerView(text: text, fontSize: fontSize, color: color)
-        stickerCanvas.addSubview(sticker)
-        sticker.center = CGPoint(x: stickerCanvas.bounds.midX, y: stickerCanvas.bounds.midY)
-        bindCallbacks(to: sticker)
-        animateStickerEntry(sticker)
-    }
-
     private func bindCallbacks(to sticker: TextStickerView) {
         sticker.onTap = { [weak self, weak sticker] in
             guard let sticker else { return }
@@ -332,13 +324,6 @@ final class PhotoDecorateViewController: UIViewController {
         }
     }
 
-    private func animateStickerEntry(_ sticker: TextStickerView) {
-        sticker.transform = CGAffineTransform(scaleX: 0.5, y: 0.5)
-        UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.3) {
-            sticker.transform = .identity
-        }
-    }
-
     // MARK: - Text Edit Overlay
 
     private func showTextEditOverlay(editing sticker: TextStickerView?) {
@@ -358,8 +343,46 @@ final class PhotoDecorateViewController: UIViewController {
 
         overlay.alpha = 0
         view.addSubview(overlay)
-        UIView.animate(withDuration: 0.2) { overlay.alpha = 1 }
-        overlayTextView?.becomeFirstResponder()
+        overlay.layoutIfNeeded()
+
+        if let sticker, let tv = overlayTextView {
+            sticker.isHidden = true
+            tv.transform = stickerToTextViewTransform(sticker: sticker, textView: tv, in: overlay)
+        }
+
+        UIView.animate(withDuration: 0.25, delay: 0, options: [.curveEaseOut], animations: {
+            overlay.alpha = 1
+            self.overlayTextView?.transform = .identity
+        }, completion: { _ in
+            self.overlayTextView?.becomeFirstResponder()
+        })
+    }
+
+    private func stickerToTextViewTransform(sticker: TextStickerView, textView: UITextView, in overlay: UIView) -> CGAffineTransform {
+        let savedTransform = sticker.transform
+        sticker.transform = .identity
+        let srcRect = sticker.convert(sticker.bounds, to: overlay)
+        sticker.transform = savedTransform
+
+        let fitting = textView.sizeThatFits(CGSize(width: textView.bounds.width, height: .greatestFiniteMagnitude))
+        let textW = max(fitting.width, 1)
+        let textH = max(fitting.height, 1)
+        let dstRect = CGRect(
+            x: textView.frame.midX - textW / 2,
+            y: textView.frame.minY,
+            width: textW,
+            height: textH
+        )
+
+        let scale = max(srcRect.width / dstRect.width, srcRect.height / dstRect.height)
+        let tvCenter = CGPoint(x: textView.frame.midX, y: textView.frame.midY)
+        let scaledDstCenter = CGPoint(
+            x: tvCenter.x + scale * (dstRect.midX - tvCenter.x),
+            y: tvCenter.y + scale * (dstRect.midY - tvCenter.y)
+        )
+        let tx = srcRect.midX - scaledDstCenter.x
+        let ty = srcRect.midY - scaledDstCenter.y
+        return CGAffineTransform(translationX: tx, y: ty).scaledBy(x: scale, y: scale)
     }
 
     private func buildOverlayContainer() -> UIView {
@@ -403,16 +426,19 @@ final class PhotoDecorateViewController: UIViewController {
         if let s = sticker { tv.text = s.stickerText }
         overlayTextView = tv
         overlay.addSubview(tv)
+        let maxWidth = min(UIScreen.main.bounds.width - 40, 300.0)
         tv.snp.makeConstraints { make in
-            make.top.equalTo(topAnchor.snp.bottom).offset(16)
-            make.horizontalEdges.equalToSuperview().inset(20)
-            make.bottom.equalTo(bottomAnchor.snp.top).offset(-12)
+            make.centerX.equalToSuperview()
+            make.width.equalTo(maxWidth)
+            make.centerY.equalTo(overlay.safeAreaLayoutGuide).offset(-30).priority(.low)
+            make.top.greaterThanOrEqualTo(topAnchor.snp.bottom).offset(16)
+            make.bottom.lessThanOrEqualTo(bottomAnchor.snp.top).offset(-12)
         }
     }
 
     @objc private func dismissTextOverlay() {
         view.endEditing(true)
-        removeTextOverlay()
+        animateOverlayOut(target: editingSticker)
         editingSticker = nil
     }
 
@@ -426,20 +452,42 @@ final class PhotoDecorateViewController: UIViewController {
         }
 
         view.endEditing(true)
-        removeTextOverlay()
 
+        let target: TextStickerView
         if let existing = editingSticker {
             existing.configure(text: text, fontSize: currentFontSize, color: currentTextColor)
+            target = existing
         } else {
-            addNewSticker(text: text, fontSize: currentFontSize, color: currentTextColor)
+            let sticker = TextStickerView(text: text, fontSize: currentFontSize, color: currentTextColor)
+            stickerCanvas.addSubview(sticker)
+            sticker.center = CGPoint(x: stickerCanvas.bounds.midX, y: stickerCanvas.bounds.midY)
+            sticker.isHidden = true
+            bindCallbacks(to: sticker)
+            target = sticker
         }
+
+        animateOverlayOut(target: target)
         editingSticker = nil
     }
 
-    private func removeTextOverlay() {
+    private func animateOverlayOut(target: TextStickerView?) {
         guard let overlay = view.viewWithTag(Self.overlayTag) else { return }
-        UIView.animate(withDuration: 0.15, animations: { overlay.alpha = 0 }) { _ in
-            overlay.removeFromSuperview()
+        overlay.layoutIfNeeded()
+
+        if let target, let tv = overlayTextView {
+            let endTransform = stickerToTextViewTransform(sticker: target, textView: tv, in: overlay)
+            UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseIn], animations: {
+                tv.transform = endTransform
+                overlay.alpha = 0
+            }, completion: { _ in
+                target.isHidden = false
+                tv.transform = .identity
+                overlay.removeFromSuperview()
+            })
+        } else {
+            UIView.animate(withDuration: 0.15, animations: { overlay.alpha = 0 }) { _ in
+                overlay.removeFromSuperview()
+            }
         }
     }
 
@@ -457,7 +505,8 @@ final class PhotoDecorateViewController: UIViewController {
         tv.font = .custom(size: currentFontSize)
         tv.textColor = currentTextColor
         tv.backgroundColor = .clear
-        tv.textContainerInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
+        tv.isScrollEnabled = false
+        tv.textContainerInset = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
         tv.autocorrectionType = .no
         tv.autocapitalizationType = .none
         tv.spellCheckingType = .no
