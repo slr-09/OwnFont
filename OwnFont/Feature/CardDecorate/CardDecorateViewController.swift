@@ -28,6 +28,30 @@ final class CardDecorateViewController: UIViewController {
         bindCallbacks()
         setupInitialCard()
         setupDismissKeyboardGesture()
+        setupKeyboardObservers()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillChange(_:)),
+                                               name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillChange(_:)),
+                                               name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    @objc private func keyboardWillChange(_ n: Notification) {
+        guard let frame = n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
+              let duration = n.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double
+        else { return }
+
+        let isShowing = n.name == UIResponder.keyboardWillShowNotification
+        let inset = isShowing ? max(frame.height - view.safeAreaInsets.bottom, 0) : 0
+        UIView.animate(withDuration: duration) {
+            self.contentView.setBottomPanelInset(inset)
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
