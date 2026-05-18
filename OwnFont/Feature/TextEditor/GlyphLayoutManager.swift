@@ -53,23 +53,26 @@ final class GlyphLayoutManager: NSLayoutManager {
             let ci    = characterIndexForGlyph(at: gi)
             let attrs = storage.attributes(at: ci, effectiveRange: nil)
             let font  = attrs[.font] as? UIFont ?? .bodyHeader
-            // Y축: 캔버스의 usable 영역(baseline 위)이 font.ascender와 일치하도록 스케일
+
+            // Y축: 캔버스의 usable 영역(baseline 위)이 font.ascender와 일치하도록 스케일.
+            // 종횡비 유지(scaleX == scaleY)로 사용자가 그린 비율 그대로 렌더링.
+            // 캔버스 좌측의 빈 공간(left bearing)은 bbox 기준으로 제거하여
+            // 글리프 ink의 좌측 끝이 baselineX(커서 진행 지점)에 붙도록 한다.
             let scaleY = font.ascender / GlyphNormalizer.usableHeight
+            let scaleX = scaleY
 
-            // X축: 종횡비 유지 (scaleX = scaleY × advanceWidth/pointSize)
-            // 한글처럼 advance ≈ pointSize인 경우 scaleX ≈ scaleY로 왜곡 없음
-            let charStr = fullText.substring(with: NSRange(location: ci, length: 1)) as NSString
-            let advanceWidth = charStr.size(withAttributes: [.font: font]).width
-            let scaleX = font.pointSize > 0 ? scaleY * (advanceWidth / font.pointSize) : scaleY
-
-            let transform = CGAffineTransform(
+            let bbox = normalizedPath.boundingBox
+            let leftShift = -bbox.minX
+            let fitTransform = CGAffineTransform(translationX: leftShift, y: 0)
+            let renderTransform = CGAffineTransform(
                 a:  scaleX, b: 0,
                 c:  0,      d: -scaleY,
                 tx: baselineX,
                 ty: baselineY + GlyphNormalizer.baselineY * scaleY
             )
+            let combined = fitTransform.concatenating(renderTransform)
             let screenPath = CGMutablePath()
-            screenPath.addPath(normalizedPath, transform: transform)
+            screenPath.addPath(normalizedPath, transform: combined)
 
             let color = (attrs[.foregroundColor] as? UIColor ?? .label).cgColor
 

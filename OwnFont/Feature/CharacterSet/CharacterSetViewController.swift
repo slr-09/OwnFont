@@ -77,7 +77,12 @@ final class CharacterSetViewController: UIViewController {
         guard let tag = gesture.view?.tag else { return }
         let categories = Array(CharacterCategory.allCases)
         guard tag < categories.count else { return }
-        let vc = CharacterWritingViewController(category: categories[tag])
+        let vc: UIViewController
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            vc = CharacterWritingGridViewController(category: categories[tag])
+        } else {
+            vc = CharacterWritingViewController(category: categories[tag])
+        }
         navigationController?.pushViewController(vc, animated: true)
     }
 

@@ -21,10 +21,11 @@ final class TextEditorViewController: UIViewController {
         super.viewDidLoad()
         bindCallbacks()
         bindPlaceholder()
-        
-        // 1. 드래그로 키보드 내리기 
+        bindGlyphKerning()
+
+        // 1. 드래그로 키보드 내리기
         contentView.textView.keyboardDismissMode = .onDrag
-        
+
         // 2. 텍스트 영역 외(상단 탑바, 하단 빈공간 등) 탭으로 키보드 내리기
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tapGesture.delegate = self
@@ -76,6 +77,48 @@ final class TextEditorViewController: UIViewController {
             .store(in: &cancellables)
     }
 
+    private func bindGlyphKerning() {
+        NotificationCenter.default
+            .publisher(for: UITextView.textDidChangeNotification, object: contentView.textView)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.applyGlyphKerning()
+            }
+            .store(in: &cancellables)
+    }
+
+    // 커스텀 글리프 문자의 advance를 실제 렌더 폭에 맞추기 위해 .kern 보정
+    // 렌더 폭 = emSize × (font.ascender / usableHeight) (GlyphLayoutManager의 scaleX와 동일)
+    private func applyGlyphKerning() {
+        let storage = contentView.textView.textStorage
+        let text = storage.string as NSString
+        let length = text.length
+        guard length > 0 else { return }
+
+        storage.beginEditing()
+        for i in 0..<length {
+            let charRange = NSRange(location: i, length: 1)
+            let char = text.substring(with: charRange)
+            let font = storage.attribute(.font, at: i, effectiveRange: nil) as? UIFont ?? .bodyHeader
+
+            guard let glyphData = GlyphStore.shared.glyph(for: char) else {
+                storage.removeAttribute(.kern, range: charRange)
+                continue
+            }
+
+            // 실제 ink 폭(bbox.width) × scaleY 를 렌더 폭으로 사용 + 우측 side bearing 으로
+            // 글자 사이 간격 확보 (pointSize의 12%)
+            let scaleY = font.ascender / GlyphNormalizer.usableHeight
+            let bbox = glyphData.normalizedPath.boundingBox
+            let renderedWidth = bbox.width * scaleY
+            let sideBearing = font.pointSize * 0.12
+            let advance = (char as NSString).size(withAttributes: [.font: font]).width
+            let kern = renderedWidth + sideBearing - advance
+            storage.addAttribute(.kern, value: kern, range: charRange)
+        }
+        storage.endEditing()
+    }
+
     // MARK: - Font Size
 
     private func updateFontSize(_ size: CGFloat) {
@@ -89,6 +132,8 @@ final class TextEditorViewController: UIViewController {
             let range = NSRange(location: 0, length: tv.textStorage.length)
             tv.textStorage.addAttribute(.font, value: font, range: range)
         }
+
+        applyGlyphKerning()
 
         // 폰트 변경 후 GlyphLayoutManager에 전체 범위 리렌더링 요청
         // setNeedsDisplay()만으로는 커스텀 NSLayoutManager가 재실행되지 않을 수 있음
