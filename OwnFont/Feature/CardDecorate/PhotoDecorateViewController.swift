@@ -97,9 +97,32 @@ final class PhotoDecorateViewController: UIViewController {
         let v = UIView()
         v.backgroundColor = .clear
         v.clipsToBounds = true
-        
+
         return v
     }()
+
+    // MARK: - Trash Zone
+
+    private let trashView: UIView = {
+        let v = UIView()
+        v.backgroundColor = UIColor.black.withAlphaComponent(0.55)
+        v.layer.cornerRadius = 28
+        v.isHidden = true
+        v.alpha = 0
+        v.isUserInteractionEnabled = false
+        return v
+    }()
+
+    private let trashIcon: UIImageView = {
+        let iv = UIImageView()
+        let cfg = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
+        iv.image = UIImage(systemName: "trash.fill", withConfiguration: cfg)
+        iv.tintColor = .white
+        iv.contentMode = .center
+        return iv
+    }()
+
+    private var isTrashHighlighted: Bool = false
 
     // MARK: - Init
 
@@ -162,6 +185,14 @@ final class PhotoDecorateViewController: UIViewController {
         navBarView.addSubview(saveButton)
         view.addSubview(photoImageView)
         photoImageView.addSubview(stickerCanvas)
+        view.addSubview(trashView)
+        trashView.addSubview(trashIcon)
+        trashView.snp.makeConstraints { make in
+            make.centerX.equalToSuperview()
+            make.bottom.equalTo(view.safeAreaLayoutGuide).inset(24)
+            make.size.equalTo(56)
+        }
+        trashIcon.snp.makeConstraints { $0.center.equalToSuperview() }
 
         navBarView.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide)
@@ -230,10 +261,74 @@ final class PhotoDecorateViewController: UIViewController {
             guard let sticker else { return }
             self?.showTextEditOverlay(editing: sticker)
         }
-        sticker.onDelete = { s in
-            UIView.animate(withDuration: 0.15, animations: { s.alpha = 0 }) { _ in
-                s.removeFromSuperview()
+        sticker.onPanStateChanged = { [weak self, weak sticker] state in
+            guard let self, let sticker else { return }
+            self.handleStickerPan(sticker, state: state)
+        }
+    }
+
+    // MARK: - Trash Drag
+
+    private func handleStickerPan(_ sticker: TextStickerView, state: UIGestureRecognizer.State) {
+        switch state {
+        case .began:
+            showTrashView()
+            updateTrashHighlight(for: sticker)
+        case .changed:
+            updateTrashHighlight(for: sticker)
+        case .ended:
+            if isStickerOverTrash(sticker) {
+                deleteSticker(sticker)
             }
+            hideTrashView()
+        case .cancelled, .failed:
+            hideTrashView()
+        default:
+            break
+        }
+    }
+
+    private func isStickerOverTrash(_ sticker: TextStickerView) -> Bool {
+        guard !trashView.isHidden else { return false }
+        let stickerCenter = stickerCanvas.convert(sticker.center, to: view)
+        return trashView.frame.insetBy(dx: -12, dy: -12).contains(stickerCenter)
+    }
+
+    private func updateTrashHighlight(for sticker: TextStickerView) {
+        let over = isStickerOverTrash(sticker)
+        guard over != isTrashHighlighted else { return }
+        isTrashHighlighted = over
+        UIView.animate(withDuration: 0.15) {
+            self.trashView.transform = over ? CGAffineTransform(scaleX: 1.2, y: 1.2) : .identity
+            self.trashView.backgroundColor = over
+                ? UIColor.systemRed.withAlphaComponent(0.9)
+                : UIColor.black.withAlphaComponent(0.55)
+        }
+    }
+
+    private func showTrashView() {
+        trashView.isHidden = false
+        view.bringSubviewToFront(trashView)
+        UIView.animate(withDuration: 0.2) { self.trashView.alpha = 1 }
+    }
+
+    private func hideTrashView() {
+        isTrashHighlighted = false
+        UIView.animate(withDuration: 0.2, animations: {
+            self.trashView.alpha = 0
+            self.trashView.transform = .identity
+            self.trashView.backgroundColor = UIColor.black.withAlphaComponent(0.55)
+        }) { _ in
+            self.trashView.isHidden = true
+        }
+    }
+
+    private func deleteSticker(_ sticker: TextStickerView) {
+        UIView.animate(withDuration: 0.2, animations: {
+            sticker.alpha = 0
+            sticker.transform = sticker.transform.scaledBy(x: 0.1, y: 0.1)
+        }) { _ in
+            sticker.removeFromSuperview()
         }
     }
 
@@ -501,10 +596,7 @@ final class PhotoDecorateViewController: UIViewController {
     // MARK: - Save
 
     private func renderAndSave() {
-        let stickers = stickerCanvas.subviews.compactMap { $0 as? TextStickerView }
-        stickers.forEach { $0.setControlsHidden(true) }
         let pngData = renderCompositeImage()
-        stickers.forEach { $0.setControlsHidden(false) }
         saveToPhotoLibrary(pngData)
     }
 

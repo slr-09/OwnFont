@@ -9,18 +9,13 @@ import SnapKit
 final class TextStickerView: UIView {
 
     var onTap: (() -> Void)?
-    var onDelete: ((TextStickerView) -> Void)?
-
-    func setControlsHidden(_ hidden: Bool) {
-        deleteButton.isHidden = hidden
-    }
+    var onPanStateChanged: ((UIGestureRecognizer.State) -> Void)?
 
     private(set) var stickerText: String = ""
     private(set) var stickerFontSize: CGFloat = 36
     private(set) var stickerColor: UIColor = .white
 
     private lazy var textView: UITextView = makeTextView()
-    private lazy var deleteButton: UIButton = makeDeleteButton()
     private var currentScale: CGFloat = 1
     private var currentRotation: CGFloat = 0
 
@@ -39,14 +34,7 @@ final class TextStickerView: UIView {
 
     private func setupSubviews() {
         addSubview(textView)
-        addSubview(deleteButton)
         textView.snp.makeConstraints { $0.edges.equalToSuperview() }
-        deleteButton.snp.makeConstraints { make in
-            make.top.equalToSuperview().offset(-14)
-            make.trailing.equalToSuperview().offset(14)
-            make.size.equalTo(28)
-        }
-        deleteButton.addTarget(self, action: #selector(handleDelete), for: .touchUpInside)
     }
 
     private func setupGestures() {
@@ -117,13 +105,21 @@ final class TextStickerView: UIView {
         onTap?()
     }
 
-    @objc private func handleDelete() { onDelete?(self) }
-
     @objc private func handlePan(_ r: UIPanGestureRecognizer) {
         guard let sv = superview else { return }
         let t = r.translation(in: sv)
         center = CGPoint(x: center.x + t.x, y: center.y + t.y)
         r.setTranslation(.zero, in: sv)
+
+        switch r.state {
+        case .began:
+            sv.bringSubviewToFront(self)
+            onPanStateChanged?(.began)
+        case .changed, .ended, .cancelled, .failed:
+            onPanStateChanged?(r.state)
+        default:
+            break
+        }
     }
 
     @objc private func handlePinch(_ r: UIPinchGestureRecognizer) {
@@ -159,18 +155,6 @@ final class TextStickerView: UIView {
         tv.isScrollEnabled = false
         tv.textContainerInset = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
         return tv
-    }
-
-    private func makeDeleteButton() -> UIButton {
-        let btn = UIButton(type: .system)
-        let cfg = UIImage.SymbolConfiguration(pointSize: 16, weight: .bold)
-        btn.setImage(UIImage(systemName: "xmark.circle.fill", withConfiguration: cfg), for: .normal)
-        btn.tintColor = .white
-        btn.layer.shadowColor = UIColor.black.cgColor
-        btn.layer.shadowRadius = 3
-        btn.layer.shadowOpacity = 0.7
-        btn.layer.shadowOffset = .zero
-        return btn
     }
 }
 
