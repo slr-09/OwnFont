@@ -507,6 +507,13 @@ final class CardDecorateView: UIView {
     func dismissKeyboard() {
         endEditing(true)
     }
+
+    func setBottomPanelInset(_ inset: CGFloat) {
+        bottomPanel.snp.updateConstraints { make in
+            make.bottom.equalToSuperview().inset(inset)
+        }
+        layoutIfNeeded()
+    }
 }
 
 // MARK: - Factory

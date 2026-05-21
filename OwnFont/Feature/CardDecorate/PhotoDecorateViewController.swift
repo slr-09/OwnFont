@@ -97,9 +97,32 @@ final class PhotoDecorateViewController: UIViewController {
         let v = UIView()
         v.backgroundColor = .clear
         v.clipsToBounds = true
-        
+
         return v
     }()
+
+    // MARK: - Trash Zone
+
+    private let trashView: UIView = {
+        let v = UIView()
+        v.backgroundColor = UIColor.black.withAlphaComponent(0.55)
+        v.layer.cornerRadius = 28
+        v.isHidden = true
+        v.alpha = 0
+        v.isUserInteractionEnabled = false
+        return v
+    }()
+
+    private let trashIcon: UIImageView = {
+        let iv = UIImageView()
+        let cfg = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
+        iv.image = UIImage(systemName: "trash.fill", withConfiguration: cfg)
+        iv.tintColor = .white
+        iv.contentMode = .center
+        return iv
+    }()
+
+    private var isTrashHighlighted: Bool = false
 
     // MARK: - Init
 
@@ -162,6 +185,14 @@ final class PhotoDecorateViewController: UIViewController {
         navBarView.addSubview(saveButton)
         view.addSubview(photoImageView)
         photoImageView.addSubview(stickerCanvas)
+        view.addSubview(trashView)
+        trashView.addSubview(trashIcon)
+        trashView.snp.makeConstraints { make in
+            make.centerX.equalToSuperview()
+            make.bottom.equalTo(view.safeAreaLayoutGuide).inset(24)
+            make.size.equalTo(56)
+        }
+        trashIcon.snp.makeConstraints { $0.center.equalToSuperview() }
 
         navBarView.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide)
@@ -201,8 +232,6 @@ final class PhotoDecorateViewController: UIViewController {
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
         textButton.addTarget(self, action: #selector(handleAddText), for: .touchUpInside)
 
-        let canvasTap = UITapGestureRecognizer(target: self, action: #selector(handleCanvasTap(_:)))
-        stickerCanvas.addGestureRecognizer(canvasTap)
     }
 
     @objc private func handleBack() {
@@ -214,50 +243,84 @@ final class PhotoDecorateViewController: UIViewController {
     }
 
     @objc private func handleAddText() {
-        deselectAllStickers()
         showTextEditOverlay(editing: nil)
-    }
-
-    @objc private func handleCanvasTap(_ r: UITapGestureRecognizer) {
-        let location = r.location(in: stickerCanvas)
-        guard stickerCanvas.hitTest(location, with: nil) === stickerCanvas else { return }
-        deselectAllStickers()
     }
 
     // MARK: - Sticker Management
 
-    private func deselectAllStickers() {
-        stickerCanvas.subviews.compactMap { $0 as? TextStickerView }.forEach {
-            $0.isStickerSelected = false
-        }
-    }
-
-    private func addNewSticker(text: String, fontSize: CGFloat, color: UIColor) {
-        let sticker = TextStickerView(text: text, fontSize: fontSize, color: color)
-        stickerCanvas.addSubview(sticker)
-        sticker.center = CGPoint(x: stickerCanvas.bounds.midX, y: stickerCanvas.bounds.midY)
-        bindCallbacks(to: sticker)
-        animateStickerEntry(sticker)
-    }
-
     private func bindCallbacks(to sticker: TextStickerView) {
-        sticker.onDoubleTap = { [weak self, weak sticker] in
+        sticker.onTap = { [weak self, weak sticker] in
             guard let sticker else { return }
-            self?.deselectAllStickers()
             self?.showTextEditOverlay(editing: sticker)
         }
-        sticker.onDelete = { [weak self] s in
-            UIView.animate(withDuration: 0.15, animations: { s.alpha = 0 }) { _ in
-                s.removeFromSuperview()
-                self?.deselectAllStickers()
-            }
+        sticker.onPanStateChanged = { [weak self, weak sticker] state in
+            guard let self, let sticker else { return }
+            self.handleStickerPan(sticker, state: state)
         }
     }
 
-    private func animateStickerEntry(_ sticker: TextStickerView) {
-        sticker.transform = CGAffineTransform(scaleX: 0.5, y: 0.5)
-        UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.3) {
-            sticker.transform = .identity
+    // MARK: - Trash Drag
+
+    private func handleStickerPan(_ sticker: TextStickerView, state: UIGestureRecognizer.State) {
+        switch state {
+        case .began:
+            showTrashView()
+            updateTrashHighlight(for: sticker)
+        case .changed:
+            updateTrashHighlight(for: sticker)
+        case .ended:
+            if isStickerOverTrash(sticker) {
+                deleteSticker(sticker)
+            }
+            hideTrashView()
+        case .cancelled, .failed:
+            hideTrashView()
+        default:
+            break
+        }
+    }
+
+    private func isStickerOverTrash(_ sticker: TextStickerView) -> Bool {
+        guard !trashView.isHidden else { return false }
+        let stickerCenter = stickerCanvas.convert(sticker.center, to: view)
+        return trashView.frame.insetBy(dx: -12, dy: -12).contains(stickerCenter)
+    }
+
+    private func updateTrashHighlight(for sticker: TextStickerView) {
+        let over = isStickerOverTrash(sticker)
+        guard over != isTrashHighlighted else { return }
+        isTrashHighlighted = over
+        UIView.animate(withDuration: 0.15) {
+            self.trashView.transform = over ? CGAffineTransform(scaleX: 1.2, y: 1.2) : .identity
+            self.trashView.backgroundColor = over
+                ? UIColor.systemRed.withAlphaComponent(0.9)
+                : UIColor.black.withAlphaComponent(0.55)
+        }
+    }
+
+    private func showTrashView() {
+        trashView.isHidden = false
+        view.bringSubviewToFront(trashView)
+        UIView.animate(withDuration: 0.2) { self.trashView.alpha = 1 }
+    }
+
+    private func hideTrashView() {
+        isTrashHighlighted = false
+        UIView.animate(withDuration: 0.2, animations: {
+            self.trashView.alpha = 0
+            self.trashView.transform = .identity
+            self.trashView.backgroundColor = UIColor.black.withAlphaComponent(0.55)
+        }) { _ in
+            self.trashView.isHidden = true
+        }
+    }
+
+    private func deleteSticker(_ sticker: TextStickerView) {
+        UIView.animate(withDuration: 0.2, animations: {
+            sticker.alpha = 0
+            sticker.transform = sticker.transform.scaledBy(x: 0.1, y: 0.1)
+        }) { _ in
+            sticker.removeFromSuperview()
         }
     }
 
@@ -280,8 +343,46 @@ final class PhotoDecorateViewController: UIViewController {
 
         overlay.alpha = 0
         view.addSubview(overlay)
-        UIView.animate(withDuration: 0.2) { overlay.alpha = 1 }
-        overlayTextView?.becomeFirstResponder()
+        overlay.layoutIfNeeded()
+
+        if let sticker, let tv = overlayTextView {
+            sticker.isHidden = true
+            tv.transform = stickerToTextViewTransform(sticker: sticker, textView: tv, in: overlay)
+        }
+
+        UIView.animate(withDuration: 0.25, delay: 0, options: [.curveEaseOut], animations: {
+            overlay.alpha = 1
+            self.overlayTextView?.transform = .identity
+        }, completion: { _ in
+            self.overlayTextView?.becomeFirstResponder()
+        })
+    }
+
+    private func stickerToTextViewTransform(sticker: TextStickerView, textView: UITextView, in overlay: UIView) -> CGAffineTransform {
+        let savedTransform = sticker.transform
+        sticker.transform = .identity
+        let srcRect = sticker.convert(sticker.bounds, to: overlay)
+        sticker.transform = savedTransform
+
+        let fitting = textView.sizeThatFits(CGSize(width: textView.bounds.width, height: .greatestFiniteMagnitude))
+        let textW = max(fitting.width, 1)
+        let textH = max(fitting.height, 1)
+        let dstRect = CGRect(
+            x: textView.frame.midX - textW / 2,
+            y: textView.frame.minY,
+            width: textW,
+            height: textH
+        )
+
+        let scale = max(srcRect.width / dstRect.width, srcRect.height / dstRect.height)
+        let tvCenter = CGPoint(x: textView.frame.midX, y: textView.frame.midY)
+        let scaledDstCenter = CGPoint(
+            x: tvCenter.x + scale * (dstRect.midX - tvCenter.x),
+            y: tvCenter.y + scale * (dstRect.midY - tvCenter.y)
+        )
+        let tx = srcRect.midX - scaledDstCenter.x
+        let ty = srcRect.midY - scaledDstCenter.y
+        return CGAffineTransform(translationX: tx, y: ty).scaledBy(x: scale, y: scale)
     }
 
     private func buildOverlayContainer() -> UIView {
@@ -322,19 +423,24 @@ final class PhotoDecorateViewController: UIViewController {
 
     private func addOverlayTextView(to overlay: UIView, below topAnchor: UIView, above bottomAnchor: UIView, editing sticker: TextStickerView?) {
         let tv = makeOverlayTextView()
+        tv.delegate = self
         if let s = sticker { tv.text = s.stickerText }
+        GlyphKerning.apply(to: tv.textStorage)
         overlayTextView = tv
         overlay.addSubview(tv)
+        let maxWidth = min(UIScreen.main.bounds.width - 40, 300.0)
         tv.snp.makeConstraints { make in
-            make.top.equalTo(topAnchor.snp.bottom).offset(16)
-            make.horizontalEdges.equalToSuperview().inset(20)
-            make.bottom.equalTo(bottomAnchor.snp.top).offset(-12)
+            make.centerX.equalToSuperview()
+            make.width.equalTo(maxWidth)
+            make.centerY.equalTo(overlay.safeAreaLayoutGuide).offset(-30).priority(.low)
+            make.top.greaterThanOrEqualTo(topAnchor.snp.bottom).offset(16)
+            make.bottom.lessThanOrEqualTo(bottomAnchor.snp.top).offset(-12)
         }
     }
 
     @objc private func dismissTextOverlay() {
         view.endEditing(true)
-        removeTextOverlay()
+        animateOverlayOut(target: editingSticker)
         editingSticker = nil
     }
 
@@ -348,20 +454,42 @@ final class PhotoDecorateViewController: UIViewController {
         }
 
         view.endEditing(true)
-        removeTextOverlay()
 
+        let target: TextStickerView
         if let existing = editingSticker {
             existing.configure(text: text, fontSize: currentFontSize, color: currentTextColor)
+            target = existing
         } else {
-            addNewSticker(text: text, fontSize: currentFontSize, color: currentTextColor)
+            let sticker = TextStickerView(text: text, fontSize: currentFontSize, color: currentTextColor)
+            stickerCanvas.addSubview(sticker)
+            sticker.center = CGPoint(x: stickerCanvas.bounds.midX, y: stickerCanvas.bounds.midY)
+            sticker.isHidden = true
+            bindCallbacks(to: sticker)
+            target = sticker
         }
+
+        animateOverlayOut(target: target)
         editingSticker = nil
     }
 
-    private func removeTextOverlay() {
+    private func animateOverlayOut(target: TextStickerView?) {
         guard let overlay = view.viewWithTag(Self.overlayTag) else { return }
-        UIView.animate(withDuration: 0.15, animations: { overlay.alpha = 0 }) { _ in
-            overlay.removeFromSuperview()
+        overlay.layoutIfNeeded()
+
+        if let target, let tv = overlayTextView {
+            let endTransform = stickerToTextViewTransform(sticker: target, textView: tv, in: overlay)
+            UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseIn], animations: {
+                tv.transform = endTransform
+                overlay.alpha = 0
+            }, completion: { _ in
+                target.isHidden = false
+                tv.transform = .identity
+                overlay.removeFromSuperview()
+            })
+        } else {
+            UIView.animate(withDuration: 0.15, animations: { overlay.alpha = 0 }) { _ in
+                overlay.removeFromSuperview()
+            }
         }
     }
 
@@ -379,7 +507,8 @@ final class PhotoDecorateViewController: UIViewController {
         tv.font = .custom(size: currentFontSize)
         tv.textColor = currentTextColor
         tv.backgroundColor = .clear
-        tv.textContainerInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
+        tv.isScrollEnabled = false
+        tv.textContainerInset = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
         tv.autocorrectionType = .no
         tv.autocapitalizationType = .none
         tv.spellCheckingType = .no
@@ -483,6 +612,7 @@ final class PhotoDecorateViewController: UIViewController {
         if let text = tv.text, !text.isEmpty {
             tv.textStorage.addAttribute(.font, value: UIFont.custom(size: currentFontSize),
                                         range: NSRange(location: 0, length: (text as NSString).length))
+            GlyphKerning.apply(to: tv.textStorage)
         }
     }
 
@@ -518,7 +648,6 @@ final class PhotoDecorateViewController: UIViewController {
     // MARK: - Save
 
     private func renderAndSave() {
-        deselectAllStickers()
         let pngData = renderCompositeImage()
         saveToPhotoLibrary(pngData)
     }
@@ -560,5 +689,14 @@ final class PhotoDecorateViewController: UIViewController {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "확인", style: .default))
         present(alert, animated: true)
+    }
+}
+
+// MARK: - UITextViewDelegate
+
+extension PhotoDecorateViewController: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        guard textView === overlayTextView else { return }
+        GlyphKerning.apply(to: textView.textStorage)
     }
 }

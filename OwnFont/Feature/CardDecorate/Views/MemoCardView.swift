@@ -135,6 +135,7 @@ final class MemoCardView: UIView {
         tv.text = displayText
         let range = NSRange(location: 0, length: tv.textStorage.length)
         tv.textStorage.addAttribute(.foregroundColor, value: color, range: range)
+        GlyphKerning.apply(to: tv.textStorage)
         tv.invalidateIntrinsicContentSize()
     }
 

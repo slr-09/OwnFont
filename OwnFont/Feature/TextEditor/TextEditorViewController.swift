@@ -87,36 +87,8 @@ final class TextEditorViewController: UIViewController {
             .store(in: &cancellables)
     }
 
-    // 커스텀 글리프 문자의 advance를 실제 렌더 폭에 맞추기 위해 .kern 보정
-    // 렌더 폭 = emSize × (font.ascender / usableHeight) (GlyphLayoutManager의 scaleX와 동일)
     private func applyGlyphKerning() {
-        let storage = contentView.textView.textStorage
-        let text = storage.string as NSString
-        let length = text.length
-        guard length > 0 else { return }
-
-        storage.beginEditing()
-        for i in 0..<length {
-            let charRange = NSRange(location: i, length: 1)
-            let char = text.substring(with: charRange)
-            let font = storage.attribute(.font, at: i, effectiveRange: nil) as? UIFont ?? .bodyHeader
-
-            guard let glyphData = GlyphStore.shared.glyph(for: char) else {
-                storage.removeAttribute(.kern, range: charRange)
-                continue
-            }
-
-            // 실제 ink 폭(bbox.width) × scaleY 를 렌더 폭으로 사용 + 우측 side bearing 으로
-            // 글자 사이 간격 확보 (pointSize의 12%)
-            let scaleY = font.ascender / GlyphNormalizer.usableHeight
-            let bbox = glyphData.normalizedPath.boundingBox
-            let renderedWidth = bbox.width * scaleY
-            let sideBearing = font.pointSize * 0.12
-            let advance = (char as NSString).size(withAttributes: [.font: font]).width
-            let kern = renderedWidth + sideBearing - advance
-            storage.addAttribute(.kern, value: kern, range: charRange)
-        }
-        storage.endEditing()
+        GlyphKerning.apply(to: contentView.textView.textStorage)
     }
 
     // MARK: - Font Size
