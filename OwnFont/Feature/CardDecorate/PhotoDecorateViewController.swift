@@ -50,6 +50,8 @@ final class PhotoDecorateViewController: UIViewController {
         return l
     }()
 
+    private let shareButton = InstagramShareButton()
+
     private let textButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.backgroundColor = .surfaceSecondary
@@ -186,6 +188,8 @@ final class PhotoDecorateViewController: UIViewController {
         view.addSubview(photoImageView)
         photoImageView.addSubview(stickerCanvas)
         view.addSubview(trashView)
+        // shareButton 은 photoImageView 위에 떠 있어야 하므로 마지막에 추가.
+        view.addSubview(shareButton)
         trashView.addSubview(trashIcon)
         trashView.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
@@ -212,6 +216,11 @@ final class PhotoDecorateViewController: UIViewController {
             make.trailing.equalToSuperview().inset(20)
             make.centerY.equalToSuperview()
         }
+        shareButton.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(20)
+            make.top.equalTo(navBarView.snp.bottom).offset(4)
+            make.height.equalTo(28)
+        }
         textButton.snp.makeConstraints { make in
             make.trailing.equalTo(saveButton.snp.leading).offset(-8)
             make.centerY.equalToSuperview()
@@ -231,7 +240,7 @@ final class PhotoDecorateViewController: UIViewController {
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
         textButton.addTarget(self, action: #selector(handleAddText), for: .touchUpInside)
-
+        shareButton.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
     }
 
     @objc private func handleBack() {
@@ -244,6 +253,14 @@ final class PhotoDecorateViewController: UIViewController {
 
     @objc private func handleAddText() {
         showTextEditOverlay(editing: nil)
+    }
+
+    @objc private func handleShare() {
+        let pngData = renderCompositeImage()
+        let ok = InstagramStoryShareService.share(pngData: pngData)
+        if !ok {
+            showAlert(title: "공유 실패", message: "인스타그램이 설치되어 있어야 스토리로 공유할 수 있어요.")
+        }
     }
 
     // MARK: - Sticker Management

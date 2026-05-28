@@ -14,6 +14,7 @@ final class CardDecorateView: UIView {
     enum Action {
         case back
         case saveImage
+        case shareToInstagram
         case mainTextChanged(String)
         case subTextChanged(String)
         case backgroundColorSelected(bg: UIColor, stroke: UIColor)
@@ -50,6 +51,8 @@ final class CardDecorateView: UIView {
         l.textColor = .textPrimary
         return l
     }()
+
+    private let shareButton = InstagramShareButton()
 
     private let saveButton: UIButton = {
         let btn = UIButton(type: .system)
@@ -213,6 +216,10 @@ final class CardDecorateView: UIView {
         bottomPanel.addSubview(textTabView)
         bottomPanel.addSubview(colorTabView)
 
+        // shareButton 은 cardContainer/bottomPanel 위에 떠 있어야 하므로
+        // 마지막에 추가해 z-order 를 가장 위로 둔다.
+        addSubview(shareButton)
+
         setupTextTab()
         setupColorTab()
 
@@ -233,6 +240,11 @@ final class CardDecorateView: UIView {
         saveButton.snp.makeConstraints { make in
             make.trailing.equalToSuperview().inset(20)
             make.centerY.equalToSuperview()
+        }
+        shareButton.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(20)
+            make.top.equalTo(navBarView.snp.bottom).offset(4)
+            make.height.equalTo(28)
         }
 
         bottomPanel.snp.makeConstraints { make in
@@ -382,6 +394,7 @@ final class CardDecorateView: UIView {
     private func setupActions() {
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
+        shareButton.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
         segmentControl.addTarget(self, action: #selector(segmentChanged(_:)), for: .valueChanged)
         mainToggleButton.addTarget(self, action: #selector(handleMainToggle), for: .touchUpInside)
         subToggleButton.addTarget(self, action: #selector(handleSubToggle), for: .touchUpInside)
@@ -394,6 +407,7 @@ final class CardDecorateView: UIView {
 
     @objc private func handleBack() { actionPublisher.send(.back) }
     @objc private func handleSave() { actionPublisher.send(.saveImage) }
+    @objc private func handleShare() { actionPublisher.send(.shareToInstagram) }
 
     @objc private func segmentChanged(_ sender: UISegmentedControl) {
         showTab(index: sender.selectedSegmentIndex)
