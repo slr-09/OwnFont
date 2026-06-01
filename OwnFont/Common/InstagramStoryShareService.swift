@@ -9,21 +9,28 @@ enum InstagramStoryShareService {
 
     /// 인스타그램 스토리 공유 URL scheme
     /// 참고: https://developers.facebook.com/docs/instagram-platform/sharing-to-stories/ios/
-    private static let scheme = URL(string: "instagram-stories://share?source_application=ownfont")!
+    private static let scheme = URL(string: "instagram-stories://share?source_application=ownfont")
+
+    /// 인스타그램 미설치 시 이동할 앱스토어 URL (Instagram App Store ID: 389801252)
+    private static let appStoreURL = URL(string: "https://apps.apple.com/app/instagram/id389801252")
 
     /// 편집된 이미지 PNG 데이터를 인스타그램 스토리로 공유한다.
     /// - Parameters:
     ///   - pngData: 배경 스티커로 사용할 PNG 데이터
     ///   - topColor: 상단 그라데이션 색 (Instagram이 사용)
     ///   - bottomColor: 하단 그라데이션 색
-    /// - Returns: 공유 시도 성공 여부. 인스타그램 미설치 시 false.
+    /// - Returns: 공유 시도 성공 여부. 인스타그램 미설치 시 앱스토어로 이동하고 false.
     @discardableResult
     static func share(
         pngData: Data,
         topColor: UIColor = UIColor(hex: "FAFAFA"),
         bottomColor: UIColor = UIColor(hex: "FFFFFF")
     ) -> Bool {
-        guard UIApplication.shared.canOpenURL(scheme) else {
+        guard let scheme, UIApplication.shared.canOpenURL(scheme) else {
+            // 인스타그램 미설치 — 앱스토어 설치 페이지로 이동
+            if let appStoreURL {
+                UIApplication.shared.open(appStoreURL, options: [:], completionHandler: nil)
+            }
             return false
         }
 
