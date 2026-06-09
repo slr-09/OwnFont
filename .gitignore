@@ -25,3 +25,6 @@ Pods/
 # Firebase
 GoogleService-Info.plist
 Gemfile.lock
+
+# Config
+*.xcconfig

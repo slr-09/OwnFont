@@ -3,6 +3,7 @@
 //  OwnFont
 //
 
+import GoogleMobileAds
 import PhotosUI
 import UIKit
 import SnapKit
@@ -17,6 +18,12 @@ final class CardHomeViewController: UIViewController {
         l.font = .cardTitle
         l.textColor = .textTitle
         return l
+    }()
+
+    private let bannerView: BannerView = {
+        let banner = BannerView(adSize: AdSizeBanner)
+        banner.adUnitID = Bundle.main.infoDictionary?["AdMobBannerID"] as? String
+        return banner
     }()
 
     private let memoCard = CardHomeViewController.makeEntryCard(
@@ -42,6 +49,7 @@ final class CardHomeViewController: UIViewController {
         view.backgroundColor = .background
         setupLayout()
         setupActions()
+        setupBanner()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -70,6 +78,16 @@ final class CardHomeViewController: UIViewController {
             make.horizontalEdges.equalToSuperview().inset(20)
             make.height.equalTo(120)
         }
+    }
+
+    private func setupBanner() {
+        bannerView.rootViewController = self
+        view.addSubview(bannerView)
+        bannerView.snp.makeConstraints { make in
+            make.bottom.equalTo(view.safeAreaLayoutGuide)
+            make.centerX.equalToSuperview()
+        }
+        bannerView.load(Request())
     }
 
     // MARK: - Actions
