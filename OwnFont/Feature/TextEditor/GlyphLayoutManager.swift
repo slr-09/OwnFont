@@ -112,8 +112,10 @@ final class GlyphLayoutManager: NSLayoutManager {
 
         let jongPath: CGPath?
         if components.jong >= 0 {
-            let jongKey = HangulComposer.jongseongChars[components.jong]
-            guard let p = GlyphStore.shared.glyph(for: jongKey)?.normalizedPath else { return nil }
+            // 종성은 초성 글리프로 합성 (겹받침은 초성 2개를 나란히 배치)
+            guard let p = HangulComposer.composeJongseong(jongIndex: components.jong, choPath: {
+                GlyphStore.shared.glyph(for: $0)?.normalizedPath
+            }) else { return nil }
             jongPath = p
         } else {
             jongPath = nil

@@ -33,6 +33,49 @@ enum HangulComposer {
         String(Unicode.Scalar(0x11A8 + UInt32($0))!)
     }
 
+    // MARK: - Jongseong → Choseong Composition
+
+    /// 초성 19자의 호환 자모 표기 (`choseongChars`와 동일 순서, 소스 가독성용)
+    private static let choseongCompat = Array("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")
+
+    /// 종성 27자를 구성하는 초성 (`jongseongChars`와 동일 순서, 호환 자모 표기)
+    ///
+    /// 홑받침은 1글자, 겹받침은 초성 2글자로 분해 — 종성은 모두 초성 글리프로 합성 가능하다.
+    private static let jongComponents: [String] = [
+        "ㄱ", "ㄲ", "ㄱㅅ", "ㄴ", "ㄴㅈ", "ㄴㅎ", "ㄷ",
+        "ㄹ", "ㄹㄱ", "ㄹㅁ", "ㄹㅂ", "ㄹㅅ", "ㄹㅌ", "ㄹㅍ", "ㄹㅎ",
+        "ㅁ", "ㅂ", "ㅂㅅ", "ㅅ", "ㅆ", "ㅇ",
+        "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ",
+    ]
+
+    /// 종성 경로를 초성 글리프로부터 합성
+    ///
+    /// - Parameters:
+    ///   - jongIndex: 종성 인덱스(0–26)
+    ///   - choPath: 초성 저장 키(`choseongChars`의 원소) → Em Square 정규화 경로 조회 클로저
+    /// - Returns: 합성된 종성 경로 (Em Square 0,0–1000,1000 Y↑). 구성 초성 누락 시 `nil`
+    static func composeJongseong(jongIndex: Int, choPath: (String) -> CGPath?) -> CGPath? {
+        guard jongIndex >= 0, jongIndex < jongComponents.count else { return nil }
+        let components = jongComponents[jongIndex]
+
+        // 호환 자모로 표기된 구성 초성을 저장 키(conjoining)로 변환 후 경로 조회
+        let paths = components.compactMap { comp -> CGPath? in
+            guard let idx = choseongCompat.firstIndex(of: comp) else { return nil }
+            return choPath(choseongChars[idx])
+        }
+        guard paths.count == components.count else { return nil }
+
+        // 홑받침: 초성 글리프 그대로 사용
+        if paths.count == 1 { return paths[0] }
+
+        // 겹받침: 두 초성을 좌·우 절반에 나란히 배치
+        let em = GlyphNormalizer.emSize
+        let result = CGMutablePath()
+        result.addPath(paths[0], transform: fitTransform(in: CGRect(x: 0,      y: 0, width: em / 2, height: em), emSize: em))
+        result.addPath(paths[1], transform: fitTransform(in: CGRect(x: em / 2, y: 0, width: em / 2, height: em), emSize: em))
+        return result
+    }
+
     // MARK: - Decomposition
 
     /// 한글 음절을 초성/중성/종성 인덱스로 분해

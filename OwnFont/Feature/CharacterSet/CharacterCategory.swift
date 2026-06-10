@@ -12,7 +12,6 @@ enum CharacterCategory: CaseIterable {
     case symbol
     case hangulChoseong
     case hangulJungseong
-    case hangulJongseong
 
     var title: String {
         switch self {
@@ -20,9 +19,8 @@ enum CharacterCategory: CaseIterable {
         case .uppercaseLatin:   return "영문 대문자"
         case .number:           return "숫자"
         case .symbol:           return "특수문자"
-        case .hangulChoseong:   return "한글 초성"
-        case .hangulJungseong:  return "한글 중성"
-        case .hangulJongseong:  return "한글 종성(받침)"
+        case .hangulChoseong:   return "한글 자음"
+        case .hangulJungseong:  return "한글 모음"
         }
     }
 
@@ -34,7 +32,6 @@ enum CharacterCategory: CaseIterable {
         case .symbol:           return "!@#…"
         case .hangulChoseong:   return "ㄱ–ㅎ"
         case .hangulJungseong:  return "ㅏ–ㅣ"
-        case .hangulJongseong:  return "ㄱ–ㅎ"
         }
     }
 
@@ -46,7 +43,6 @@ enum CharacterCategory: CaseIterable {
         case .symbol:           return 20
         case .hangulChoseong:   return 19
         case .hangulJungseong:  return 21
-        case .hangulJongseong:  return 27
         }
     }
 
@@ -70,8 +66,6 @@ enum CharacterCategory: CaseIterable {
             return HangulComposer.choseongChars
         case .hangulJungseong:
             return HangulComposer.jungseongChars
-        case .hangulJongseong:
-            return HangulComposer.jongseongChars
         }
     }
 
@@ -83,7 +77,6 @@ enum CharacterCategory: CaseIterable {
         case .symbol:           return "sparkles"
         case .hangulChoseong:   return "character"
         case .hangulJungseong:  return "character"
-        case .hangulJongseong:  return "character"
         }
     }
 
@@ -95,7 +88,6 @@ enum CharacterCategory: CaseIterable {
         case .symbol:           return .amber
         case .hangulChoseong:   return .sky
         case .hangulJungseong:  return .violet
-        case .hangulJongseong:  return .teal
         }
     }
 
@@ -107,7 +99,6 @@ enum CharacterCategory: CaseIterable {
         case .symbol:           return .amberLight
         case .hangulChoseong:   return .skyLight
         case .hangulJungseong:  return .violetLight
-        case .hangulJongseong:  return .tealLight
         }
     }
 }
