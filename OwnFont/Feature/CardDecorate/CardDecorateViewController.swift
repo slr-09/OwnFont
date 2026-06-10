@@ -72,14 +72,20 @@ final class CardDecorateViewController: UIViewController {
                 case .back:
                     navigationController?.popViewController(animated: true)
                 case .saveImage:
+                    AnalyticsManager.shared.log(.decorateSaveImage(source: .memo))
                     renderCardAsImage()
+                case .shareToInstagram:
+                    AnalyticsManager.shared.log(.instagramShareTapped(source: .memo))
+                    shareCardToInstagramStory()
                 case .mainTextChanged(let text):
                     contentView.memoCardView.configure(mainText: text)
                 case .subTextChanged(let text):
                     contentView.memoCardView.configure(subText: text)
                 case .backgroundColorSelected(let bg, let stroke):
+                    AnalyticsManager.shared.log(.decorateBackgroundChanged)
                     contentView.memoCardView.setBackground(bg, stroke: stroke)
                 case .textColorSelected(let color):
+                    AnalyticsManager.shared.log(.decorateTextColorChanged)
                     contentView.memoCardView.setTextColor(color)
                 case .mainTextToggled(let isOn):
                     contentView.memoCardView.setMainVisible(isOn)
@@ -113,16 +119,29 @@ final class CardDecorateViewController: UIViewController {
     // MARK: - Image Save
 
     private func renderCardAsImage() {
+        let pngData = renderCardPNG()
+        requestPhotoAuthorization { [weak self] in
+            self?.savePNGToPhotoLibrary(pngData)
+        }
+    }
+
+    private func renderCardPNG() -> Data {
         let card = contentView.memoCardView
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false
         let renderer = UIGraphicsImageRenderer(bounds: card.bounds, format: format)
-        let pngData = renderer.pngData { ctx in
+        return renderer.pngData { ctx in
             card.layer.render(in: ctx.cgContext)
         }
+    }
 
-        requestPhotoAuthorization { [weak self] in
-            self?.savePNGToPhotoLibrary(pngData)
+    // MARK: - Instagram Story Share
+
+    private func shareCardToInstagramStory() {
+        let pngData = renderCardPNG()
+        let ok = InstagramStoryShareService.share(pngData: pngData)
+        if !ok {
+            showAlert(title: "공유 실패", message: "인스타그램이 설치되어 있어야 스토리로 공유할 수 있어요.")
         }
     }
 
