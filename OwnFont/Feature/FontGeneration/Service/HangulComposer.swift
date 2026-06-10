@@ -68,11 +68,11 @@ enum HangulComposer {
         // 홑받침: 초성 글리프 그대로 사용
         if paths.count == 1 { return paths[0] }
 
-        // 겹받침: 두 초성을 좌·우 절반에 나란히 배치
+        // 겹받침: 두 초성을 좌·우 절반에 안쪽 정렬로 나란히 배치
         let em = GlyphNormalizer.emSize
         let result = CGMutablePath()
-        result.addPath(paths[0], transform: fitTransform(in: CGRect(x: 0,      y: 0, width: em / 2, height: em), emSize: em))
-        result.addPath(paths[1], transform: fitTransform(in: CGRect(x: em / 2, y: 0, width: em / 2, height: em), emSize: em))
+        result.addPath(paths[0], transform: fit(paths[0], into: CGRect(x: 0,         y: 0, width: em * 0.48, height: em), alignX: 1, alignY: 0.5))
+        result.addPath(paths[1], transform: fit(paths[1], into: CGRect(x: em * 0.52, y: 0, width: em * 0.48, height: em), alignX: 0, alignY: 0.5))
         return result
     }
 
@@ -111,59 +111,55 @@ enum HangulComposer {
     ///
     /// 모든 입력 경로는 Em Square(0,0)–(1000,1000) Y↑ 좌표계를 사용해야 함.
     static func composePath(cho: CGPath, jung: CGPath, jong: CGPath?, jungIndex: Int) -> CGPath {
-        let em: CGFloat   = GlyphNormalizer.emSize      // 1000
-        let base: CGFloat = GlyphNormalizer.baselineY   // 250
-        let hasJong       = jong != nil
-        let vertical      = isVerticalVowel(jungIndex)
-
-        let choZone: CGRect
-        let jungZone: CGRect
-        var jongZone: CGRect?
+        let hasJong  = jong != nil
+        let vertical = isVerticalVowel(jungIndex)
+        let result   = CGMutablePath()
 
         if vertical {
+            // 초성(좌) + 중성(우) — 초성은 오른쪽, 중성은 왼쪽으로 정렬해 간격을 좁힌다.
             if hasJong {
-                // 초성(좌상) + 중성(우상) + 종성(하단 전체)
-                choZone  = CGRect(x: 0,   y: 380, width: 580, height: 620)
-                jungZone = CGRect(x: 540, y: 380, width: 460, height: 620)
-                jongZone = CGRect(x: 50,  y: base, width: 900, height: 260)
+                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 40,  y: 540, width: 470, height: 460), alignX: 1, alignY: 0.5))
+                result.addPath(jung, transform: fit(jung, into: CGRect(x: 620, y: 540, width: 340, height: 460), alignX: 0, alignY: 0.5))
             } else {
-                // 초성(좌) + 중성(우)
-                choZone  = CGRect(x: 0,   y: base, width: 580, height: em - base)
-                jungZone = CGRect(x: 540, y: base, width: 460, height: em - base)
+                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 40,  y: 250, width: 470, height: 750), alignX: 1, alignY: 0.5))
+                result.addPath(jung, transform: fit(jung, into: CGRect(x: 620, y: 250, width: 340, height: 750), alignX: 0, alignY: 0.5))
             }
         } else {
+            // 초성(상) + 중성(하) — 초성은 아래, 중성은 위로 정렬해 간격을 좁힌다.
             if hasJong {
-                // 초성(상) + 중성(중) + 종성(하)
-                choZone  = CGRect(x: 50, y: 640, width: 900, height: 360)
-                jungZone = CGRect(x: 50, y: 310, width: 900, height: 350)
-                jongZone = CGRect(x: 50, y: base, width: 900, height: 180)
+                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 120, y: 720, width: 760, height: 280), alignX: 0.5, alignY: 0))
+                result.addPath(jung, transform: fit(jung, into: CGRect(x: 100, y: 510, width: 800, height: 170), alignX: 0.5, alignY: 0.5))
             } else {
-                // 초성(상) + 중성(하)
-                choZone  = CGRect(x: 50, y: 520, width: 900, height: 480)
-                jungZone = CGRect(x: 50, y: base, width: 900, height: 390)
+                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 120, y: 540, width: 760, height: 460), alignX: 0.5, alignY: 0))
+                result.addPath(jung, transform: fit(jung, into: CGRect(x: 100, y: 250, width: 800, height: 250), alignX: 0.5, alignY: 1))
             }
         }
 
-        let result = CGMutablePath()
-        result.addPath(cho,  transform: fitTransform(in: choZone,  emSize: em))
-        result.addPath(jung, transform: fitTransform(in: jungZone, emSize: em))
-        if let jong, let jongZone {
-            result.addPath(jong, transform: fitTransform(in: jongZone, emSize: em))
+        if let jong {
+            let zone = vertical
+                ? CGRect(x: 170, y: 250, width: 660, height: 270)
+                : CGRect(x: 120, y: 250, width: 760, height: 230)
+            result.addPath(jong, transform: fit(jong, into: zone, alignX: 0.5, alignY: 0.5))
         }
         return result
     }
 
     // MARK: - Private
 
-    /// Em Square([0,0]–[em,em]) 좌표의 경로를 목표 rect에 맞게 스케일·이동하는 변환
-    private static func fitTransform(in rect: CGRect, emSize: CGFloat) -> CGAffineTransform {
-        CGAffineTransform(
-            a:  rect.width  / emSize,
-            b:  0,
-            c:  0,
-            d:  rect.height / emSize,
-            tx: rect.minX,
-            ty: rect.minY
+    /// 경로의 실제 ink(boundingBoxOfPath)를 목표 rect에 비율 유지(aspect-fit)로 맞추는 변환.
+    ///
+    /// - alignX/alignY: rect 내 정렬 비율 (0 = 좌/하, 0.5 = 중앙, 1 = 우/상)
+    private static func fit(_ path: CGPath, into rect: CGRect,
+                            alignX: CGFloat, alignY: CGFloat) -> CGAffineTransform {
+        let b = path.boundingBoxOfPath
+        guard b.width > .ulpOfOne, b.height > .ulpOfOne else { return .identity }
+        let scale = min(rect.width / b.width, rect.height / b.height)
+        let w = b.width * scale
+        let h = b.height * scale
+        return CGAffineTransform(
+            a: scale, b: 0, c: 0, d: scale,
+            tx: rect.minX + (rect.width  - w) * alignX - b.minX * scale,
+            ty: rect.minY + (rect.height - h) * alignY - b.minY * scale
         )
     }
 }

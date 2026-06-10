@@ -18,7 +18,7 @@ final class GlyphLayoutManager: NSLayoutManager {
         let end      = NSMaxRange(glyphsToShow)
 
         var sysStart = glyphsToShow.location
-        var customWork: [(index: Int, path: CGPath)] = []
+        var customWork: [(index: Int, path: CGPath, isHangul: Bool)] = []
 
         for gi in glyphsToShow.location..<end {
             guard gi < total else { break }
@@ -28,11 +28,14 @@ final class GlyphLayoutManager: NSLayoutManager {
 
             guard let path = resolvedPath(for: char) else { continue }
 
+            // 한글 음절(가–힣)은 advance 칸에 맞춰 그리고, 그 외는 종횡비 유지 + 좌측 정렬
+            let isHangul = char.unicodeScalars.first.map { $0.value >= 0xAC00 && $0.value <= 0xD7A3 } ?? false
+
             if sysStart < gi {
                 super.drawGlyphs(forGlyphRange: NSRange(location: sysStart, length: gi - sysStart), at: origin)
             }
             sysStart = gi + 1
-            customWork.append((gi, path))
+            customWork.append((gi, path, isHangul))
         }
 
         if sysStart < end {
@@ -42,7 +45,7 @@ final class GlyphLayoutManager: NSLayoutManager {
         guard !customWork.isEmpty,
               let ctx = UIGraphicsGetCurrentContext() else { return }
 
-        for (gi, normalizedPath) in customWork {
+        for (gi, normalizedPath, isHangul) in customWork {
             var effectiveRange = NSRange()
             let lineRect = lineFragmentRect(forGlyphAt: gi, effectiveRange: &effectiveRange)
             let glyphLoc = location(forGlyphAt: gi)
@@ -54,23 +57,35 @@ final class GlyphLayoutManager: NSLayoutManager {
             let attrs = storage.attributes(at: ci, effectiveRange: nil)
             let font  = attrs[.font] as? UIFont ?? .bodyHeader
 
-            // Y축: 캔버스의 usable 영역(baseline 위)이 font.ascender와 일치하도록 스케일.
-            // 종횡비 유지(scaleX == scaleY)로 사용자가 그린 비율 그대로 렌더링.
-            // 캔버스 좌측의 빈 공간(left bearing)은 bbox 기준으로 제거하여
-            // 글리프 ink의 좌측 끝이 baselineX(커서 진행 지점)에 붙도록 한다.
-            let scaleY = font.ascender / GlyphNormalizer.usableHeight
-            let scaleX = scaleY
+            let combined: CGAffineTransform
+            if isHangul {
+                // 한글: 합성된 음절(em 0–1000)을 글자 칸(advance) 폭에 등비로 맞춘다.
+                // advance는 폰트 메트릭에서 직접 계산 — 레이아웃 위치(포커스 시 캐럿·줄 끝
+                // 여백으로 값이 달라짐)에 의존하지 않으므로 포커스 상태와 무관하게 동일 크기.
+                let ch = fullText.substring(with: NSRange(location: ci, length: 1))
+                let advance = (ch as NSString).size(withAttributes: [.font: font]).width
+                let scale = advance / GlyphNormalizer.emSize
+                combined = CGAffineTransform(
+                    a:  scale, b: 0,
+                    c:  0,     d: -scale,
+                    tx: baselineX,
+                    ty: baselineY + GlyphNormalizer.baselineY * scale
+                )
+            } else {
+                // 영문/숫자/기호: 종횡비 유지(scaleX == scaleY)로 사용자가 그린 비율 그대로.
+                // 좌측 빈 공간(left bearing)은 bbox로 제거해 ink 좌측 끝을 baselineX에 붙인다.
+                let scale = font.ascender / GlyphNormalizer.usableHeight
+                let bbox = normalizedPath.boundingBox
+                let leftShift = CGAffineTransform(translationX: -bbox.minX, y: 0)
+                let renderTransform = CGAffineTransform(
+                    a:  scale, b: 0,
+                    c:  0,     d: -scale,
+                    tx: baselineX,
+                    ty: baselineY + GlyphNormalizer.baselineY * scale
+                )
+                combined = leftShift.concatenating(renderTransform)
+            }
 
-            let bbox = normalizedPath.boundingBox
-            let leftShift = -bbox.minX
-            let fitTransform = CGAffineTransform(translationX: leftShift, y: 0)
-            let renderTransform = CGAffineTransform(
-                a:  scaleX, b: 0,
-                c:  0,      d: -scaleY,
-                tx: baselineX,
-                ty: baselineY + GlyphNormalizer.baselineY * scaleY
-            )
-            let combined = fitTransform.concatenating(renderTransform)
             let screenPath = CGMutablePath()
             screenPath.addPath(normalizedPath, transform: combined)
 
