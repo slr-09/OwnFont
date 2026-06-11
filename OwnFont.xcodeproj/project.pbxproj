@@ -14,7 +14,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		2319117F2FD810E600DFC90C /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		2319117F2FD810E600DFC90C /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OwnFont/Release.xcconfig; sourceTree = "<group>"; };
 		2344B8782F86B32E0096F844 /* OwnFont.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OwnFont.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
