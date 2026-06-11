@@ -104,6 +104,8 @@ final class TextEditorView: UIView {
 
     static let fontSizes: [CGFloat] = [20, 32, 48]
 
+    private var sizeControlBottomConstraint: Constraint?
+
     // MARK: - Init
 
     override init(frame: CGRect) {
@@ -111,9 +113,14 @@ final class TextEditorView: UIView {
         backgroundColor = .surface
         setupLayout()
         setupActions()
+        setupKeyboardObservers()
     }
 
     required init?(coder: NSCoder) { fatalError() }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
 
     // MARK: - Layout
 
@@ -146,7 +153,7 @@ final class TextEditorView: UIView {
 
         sizeControlView.snp.makeConstraints { make in
             make.horizontalEdges.equalToSuperview()
-            make.bottom.equalTo(safeAreaLayoutGuide)
+            sizeControlBottomConstraint = make.bottom.equalTo(safeAreaLayoutGuide).constraint
         }
         sizeLabel.snp.makeConstraints { make in
             make.leading.equalToSuperview().inset(20)
@@ -175,6 +182,38 @@ final class TextEditorView: UIView {
 
     private func setupActions() {
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+    }
+
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let keyboardFrame = info[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
+              let duration = info[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
+              let curve = info[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt else { return }
+
+        let keyboardHeight = keyboardFrame.height
+        let safeBottom = safeAreaInsets.bottom
+        sizeControlBottomConstraint?.update(inset: keyboardHeight - safeBottom)
+
+        UIView.animate(withDuration: duration, delay: 0, options: UIView.AnimationOptions(rawValue: curve << 16)) {
+            self.layoutIfNeeded()
+        }
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let duration = info[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
+              let curve = info[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt else { return }
+
+        sizeControlBottomConstraint?.update(inset: 0)
+
+        UIView.animate(withDuration: duration, delay: 0, options: UIView.AnimationOptions(rawValue: curve << 16)) {
+            self.layoutIfNeeded()
+        }
     }
 
     // MARK: - Layout
