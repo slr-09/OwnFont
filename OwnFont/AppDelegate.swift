@@ -9,6 +9,7 @@ import UIKit
 import FirebaseCore
 import FirebaseAnalytics
 import GoogleMobileAds
+import AppTrackingTransparency
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -21,9 +22,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         FirebaseApp.configure()
         Analytics.setAnalyticsCollectionEnabled(true)
-        MobileAds.shared.start()
+        requestTrackingAuthorization()
 
         return true
+    }
+
+    private func requestTrackingAuthorization() {
+        if #available(iOS 14, *) {
+            ATTrackingManager.requestTrackingAuthorization { _ in
+                MobileAds.shared.start()
+            }
+        } else {
+            MobileAds.shared.start()
+        }
     }
 
     // MARK: UISceneSession Lifecycle
