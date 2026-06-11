@@ -72,16 +72,20 @@ final class CardDecorateViewController: UIViewController {
                 case .back:
                     navigationController?.popViewController(animated: true)
                 case .saveImage:
+                    AnalyticsManager.shared.log(.decorateSaveImage(source: .memo))
                     renderCardAsImage()
                 case .shareToInstagram:
+                    AnalyticsManager.shared.log(.instagramShareTapped(source: .memo))
                     shareCardToInstagramStory()
                 case .mainTextChanged(let text):
                     contentView.memoCardView.configure(mainText: text)
                 case .subTextChanged(let text):
                     contentView.memoCardView.configure(subText: text)
                 case .backgroundColorSelected(let bg, let stroke):
+                    AnalyticsManager.shared.log(.decorateBackgroundChanged)
                     contentView.memoCardView.setBackground(bg, stroke: stroke)
                 case .textColorSelected(let color):
+                    AnalyticsManager.shared.log(.decorateTextColorChanged)
                     contentView.memoCardView.setTextColor(color)
                 case .mainTextToggled(let isOn):
                     contentView.memoCardView.setMainVisible(isOn)

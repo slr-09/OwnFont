@@ -94,10 +94,12 @@ final class CardHomeViewController: UIViewController {
 
     private func setupActions() {
         addCardGesture(to: memoCard) { [weak self] in
+            AnalyticsManager.shared.log(.decorateMemoOpened)
             let vc = CardDecorateViewController()
             self?.navigationController?.pushViewController(vc, animated: true)
         }
         addCardGesture(to: photoCard) { [weak self] in
+            AnalyticsManager.shared.log(.decoratePhotoOpened)
             self?.presentPhotoPicker()
         }
     }

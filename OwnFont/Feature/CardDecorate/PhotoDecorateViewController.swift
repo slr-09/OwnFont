@@ -248,14 +248,17 @@ final class PhotoDecorateViewController: UIViewController {
     }
 
     @objc private func handleSave() {
+        AnalyticsManager.shared.log(.decorateSaveImage(source: .photo))
         renderAndSave()
     }
 
     @objc private func handleAddText() {
+        AnalyticsManager.shared.log(.decorateTextStickerAdded)
         showTextEditOverlay(editing: nil)
     }
 
     @objc private func handleShare() {
+        AnalyticsManager.shared.log(.instagramShareTapped(source: .photo))
         let pngData = renderCompositeImage()
         let ok = InstagramStoryShareService.share(pngData: pngData)
         if !ok {

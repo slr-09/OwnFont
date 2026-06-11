@@ -92,6 +92,26 @@ extension UIColor {
     /// Amber border — 현재 글자 슬롯 테두리 색상 (#FCD34D)
     static let amberBorder = UIColor(hex: "FCD34D")
 
+    // MARK: - Korean Category Colors
+
+    /// Sky blue accent for 초성 (#38BDF8)
+    static let sky = UIColor(hex: "38BDF8")
+
+    /// Sky blue light tint for backgrounds (#E0F2FE)
+    static let skyLight = UIColor(hex: "E0F2FE")
+
+    /// Violet accent for 중성 (#8B5CF6)
+    static let violet = UIColor(hex: "8B5CF6")
+
+    /// Violet light tint for backgrounds (#EDE9FE)
+    static let violetLight = UIColor(hex: "EDE9FE")
+
+    /// Teal accent for 종성 (#14B8A6)
+    static let teal = UIColor(hex: "14B8A6")
+
+    /// Teal light tint for backgrounds (#CCFBF1)
+    static let tealLight = UIColor(hex: "CCFBF1")
+
     // MARK: - Icon Colors
 
     /// 비활성 아이콘 색상 (#6B7280)
