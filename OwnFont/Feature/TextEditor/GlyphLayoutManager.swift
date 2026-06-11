@@ -28,8 +28,10 @@ final class GlyphLayoutManager: NSLayoutManager {
 
             guard let path = resolvedPath(for: char) else { continue }
 
-            // 한글 음절(가–힣)은 advance 칸에 맞춰 그리고, 그 외는 종횡비 유지 + 좌측 정렬
-            let isHangul = char.unicodeScalars.first.map { $0.value >= 0xAC00 && $0.value <= 0xD7A3 } ?? false
+            // 한글 음절(가–힣) + 조합 중 단독 자모(호환 자모 ㄱ–ㅣ)는 advance 칸에 맞춰 그린다
+            let isHangul = char.unicodeScalars.first.map {
+                ($0.value >= 0xAC00 && $0.value <= 0xD7A3) || ($0.value >= 0x3131 && $0.value <= 0x3163)
+            } ?? false
 
             if sysStart < gi {
                 super.drawGlyphs(forGlyphRange: NSRange(location: sysStart, length: gi - sysStart), at: origin)
@@ -111,11 +113,11 @@ final class GlyphLayoutManager: NSLayoutManager {
         if let data = GlyphStore.shared.glyph(for: char) {
             return data.normalizedPath
         }
-        // 조합 중 단독 자모(호환 자모 ㅂ·ㅏ 등) → 저장된 초성/중성 글리프로 렌더
+        // 조합 중 단독 자모(호환 자모 ㅂ·ㅏ 등) → 음절 자모 위치에 배치해 렌더
         if let first = char.first,
-           let key = HangulComposer.standaloneGlyphKey(for: first),
-           let data = GlyphStore.shared.glyph(for: key) {
-            return data.normalizedPath
+           let info = HangulComposer.standaloneGlyph(for: first),
+           let raw = GlyphStore.shared.glyph(for: info.key)?.normalizedPath {
+            return HangulComposer.composeStandalone(path: raw, isConsonant: info.isConsonant)
         }
         return hangulComposedPath(for: char)
     }

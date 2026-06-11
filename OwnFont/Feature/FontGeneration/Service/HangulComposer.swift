@@ -102,10 +102,24 @@ enum HangulComposer {
     ///
     /// 조합 중인 음절(예: "붹" → ㅂ → 부 → 붸 → 붹)의 첫 단계처럼 자모 하나만 있을 때,
     /// 초성 자음이면 초성 글리프, 모음이면 중성 글리프로 렌더링하기 위한 매핑. 없으면 `nil`.
-    static func standaloneGlyphKey(for char: Character) -> String? {
-        if let i = choseongCompat.firstIndex(of: char)  { return choseongChars[i] }
-        if let i = jungseongCompat.firstIndex(of: char) { return jungseongChars[i] }
+    static func standaloneGlyph(for char: Character) -> (key: String, isConsonant: Bool)? {
+        if let i = choseongCompat.firstIndex(of: char)  { return (choseongChars[i], true) }
+        if let i = jungseongCompat.firstIndex(of: char) { return (jungseongChars[i], false) }
         return nil
+    }
+
+    /// 조합 중 단독 자모를 음절 자모 위치에 배치 (단독 자모가 영문처럼 크게 뜨지 않도록).
+    ///
+    /// 자음은 받침 없는 음절의 초성과 동일한 zone에 두어 ㄱ→구 전환이 자연스럽게 이어진다.
+    static func composeStandalone(path: CGPath, isConsonant: Bool) -> CGPath {
+        let result = CGMutablePath()
+        if isConsonant {
+            // 가로모음 음절 초성과 동일한 너비(480) — 단독→구→국으로 갈수록 높이만 줄어든다.
+            result.addPath(path, transform: fill(path, into: CGRect(x: 260, y: 560, width: 480, height: 440)))
+        } else {
+            result.addPath(path, transform: fit(path, into: CGRect(x: 250, y: 250, width: 500, height: 750), alignX: 0.5, alignY: 0.5))
+        }
+        return result
     }
 
     // MARK: - Vowel Classification
@@ -172,12 +186,13 @@ enum HangulComposer {
             }
         case .bottom:
             // 초성(상) + 중성(하) — 초성은 아래, 중성은 위로 정렬해 간격을 좁힌다.
+            // 초성·중성·종성 모두 너비 고정 + 높이만 압축(fill) — 아래로 쌓일수록 납작해진다.
             if hasJong {
-                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 120, y: 740, width: 760, height: 260), alignX: 0.5, alignY: 0))
-                result.addPath(jung, transform: fit(jung, into: CGRect(x: 100, y: 500, width: 800, height: 150), alignX: 0.5, alignY: 0.5))
+                result.addPath(cho,  transform: fill(cho,       into: CGRect(x: 260, y: 715, width: 480, height: 285)))
+                result.addPath(jung, transform: fillWidth(jung,  into: CGRect(x: 180, y: 505, width: 640, height: 160)))
             } else {
-                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 120, y: 560, width: 760, height: 440), alignX: 0.5, alignY: 0))
-                result.addPath(jung, transform: fit(jung, into: CGRect(x: 100, y: 250, width: 800, height: 220), alignX: 0.5, alignY: 1))
+                result.addPath(cho,  transform: fill(cho,       into: CGRect(x: 260, y: 640, width: 480, height: 340)))
+                result.addPath(jung, transform: fillWidth(jung,  into: CGRect(x: 180, y: 300, width: 640, height: 260)))
             }
         case .mixed:
             // 복합 모음(ㅘㅙㅚㅝㅞㅟㅢ): 초성(좌상) + 가로성분(초성 아래) + 세로성분(우측 전체)
@@ -195,10 +210,10 @@ enum HangulComposer {
         }
 
         if let jong {
-            // 받침은 가로로 넓고 납작한 형태(실제 폰트 관례)이므로 비율 유지 없이 칸을 채운다.
+            // 받침도 너비 고정 + 높이만 압축(fill) — 초성·중성과 동일 원칙.
             let zone = layout == .right
                 ? CGRect(x: 260, y: 250, width: 480, height: 230)
-                : CGRect(x: 220, y: 250, width: 560, height: 230)
+                : CGRect(x: 260, y: 250, width: 480, height: 200)
             result.addPath(jong, transform: fill(jong, into: zone))
         }
         return result
@@ -220,6 +235,21 @@ enum HangulComposer {
             a: scale, b: 0, c: 0, d: scale,
             tx: rect.minX + (rect.width  - w) * alignX - b.minX * scale,
             ty: rect.minY + (rect.height - h) * alignY - b.minY * scale
+        )
+    }
+
+    /// 너비는 rect에 꽉 채우되, 높이는 비율을 유지하며 rect 높이를 넘지 않게만 압축한다.
+    /// 얇은 가로획(ㅡ)은 얇게 유지되고, 정사각형 자모는 가로로 넓어진다.
+    private static func fillWidth(_ path: CGPath, into rect: CGRect) -> CGAffineTransform {
+        let b = path.boundingBoxOfPath
+        guard b.width > .ulpOfOne, b.height > .ulpOfOne else { return .identity }
+        let sx = rect.width / b.width
+        let sy = min(sx, rect.height / b.height)
+        let h = b.height * sy
+        return CGAffineTransform(
+            a: sx, b: 0, c: 0, d: sy,
+            tx: rect.minX - b.minX * sx,
+            ty: rect.minY + (rect.height - h) * 0.5 - b.minY * sy
         )
     }
 
