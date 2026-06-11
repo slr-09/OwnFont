@@ -189,10 +189,10 @@ enum HangulComposer {
             // 초성·중성·종성 모두 너비 고정 + 높이만 압축(fill) — 아래로 쌓일수록 납작해진다.
             if hasJong {
                 result.addPath(cho,  transform: fill(cho,       into: CGRect(x: 260, y: 715, width: 480, height: 285)))
-                result.addPath(jung, transform: fillWidth(jung,  into: CGRect(x: 180, y: 505, width: 640, height: 160)))
+                result.addPath(jung, transform: fillWidth(jung,  into: CGRect(x: 100, y: 505, width: 800, height: 160)))
             } else {
                 result.addPath(cho,  transform: fill(cho,       into: CGRect(x: 260, y: 640, width: 480, height: 340)))
-                result.addPath(jung, transform: fillWidth(jung,  into: CGRect(x: 180, y: 300, width: 640, height: 260)))
+                result.addPath(jung, transform: fillWidth(jung,  into: CGRect(x: 100, y: 300, width: 800, height: 260)))
             }
         case .mixed:
             // 복합 모음(ㅘㅙㅚㅝㅞㅟㅢ): 초성(좌상) + 가로성분(초성 아래) + 세로성분(우측 전체)
@@ -210,7 +210,7 @@ enum HangulComposer {
         }
 
         if let jong {
-            // 받침도 너비 고정 + 높이만 압축(fill) — 초성·중성과 동일 원칙.
+            // 받침 전체 너비 고정(fill).
             let zone = layout == .right
                 ? CGRect(x: 260, y: 250, width: 480, height: 230)
                 : CGRect(x: 260, y: 250, width: 480, height: 200)
