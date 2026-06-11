@@ -38,6 +38,9 @@ enum HangulComposer {
     /// 초성 19자의 호환 자모 표기 (`choseongChars`와 동일 순서, 소스 가독성용)
     private static let choseongCompat = Array("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")
 
+    /// 중성 21자의 호환 자모 표기 (`jungseongChars`와 동일 순서, 소스 가독성용)
+    private static let jungseongCompat = Array("ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ")
+
     /// 종성 27자를 구성하는 초성 (`jongseongChars`와 동일 순서, 호환 자모 표기)
     ///
     /// 홑받침은 1글자, 겹받침은 초성 2글자로 분해 — 종성은 모두 초성 글리프로 합성 가능하다.
@@ -95,51 +98,108 @@ enum HangulComposer {
         return (cho: cho, jung: jung, jong: jong == 0 ? -1 : jong - 1)
     }
 
+    /// 단독 입력된 호환 자모(ㄱ, ㅏ 등)에 대응하는 저장 글리프 키.
+    ///
+    /// 조합 중인 음절(예: "붹" → ㅂ → 부 → 붸 → 붹)의 첫 단계처럼 자모 하나만 있을 때,
+    /// 초성 자음이면 초성 글리프, 모음이면 중성 글리프로 렌더링하기 위한 매핑. 없으면 `nil`.
+    static func standaloneGlyphKey(for char: Character) -> String? {
+        if let i = choseongCompat.firstIndex(of: char)  { return choseongChars[i] }
+        if let i = jungseongCompat.firstIndex(of: char) { return jungseongChars[i] }
+        return nil
+    }
+
     // MARK: - Vowel Classification
 
-    /// 중성이 세로 모음(ㅏ ㅐ ㅑ ㅒ ㅓ ㅔ ㅕ ㅖ ㅣ)인지 여부
-    ///
-    /// - 세로 모음: 초성(좌) + 중성(우) 배치
-    /// - 가로 모음: 초성(상) + 중성(하) 배치
-    static func isVerticalVowel(_ jungIndex: Int) -> Bool {
-        jungIndex <= 7 || jungIndex == 20
+    /// 중성 모양에 따른 초성·중성 배치 유형
+    enum VowelLayout {
+        case right   // 세로 모음: 초성(좌) + 중성(우)        — ㅏㅐㅑㅒㅓㅔㅕㅖ ㅣ
+        case bottom  // 가로 모음: 초성(상) + 중성(하)        — ㅗㅛㅜㅠㅡ
+        case mixed   // 복합 모음: 초성(좌상) + 중성(우·하)   — ㅘㅙㅚㅝㅞㅟㅢ
     }
+
+    /// 중성 인덱스(0–20)의 배치 유형 분류
+    static func vowelLayout(_ jungIndex: Int) -> VowelLayout {
+        switch jungIndex {
+        case 0...7, 20:                 return .right
+        case 9, 10, 11, 14, 15, 16, 19: return .mixed
+        default:                        return .bottom   // 8(ㅗ) 12(ㅛ) 13(ㅜ) 17(ㅠ) 18(ㅡ)
+        }
+    }
+
+    /// 복합 중성 → (가로 성분, 세로 성분)의 기본 중성 인덱스. 복합 모음이 아니면 `nil`.
+    ///
+    /// 가로 성분(ㅗ/ㅜ/ㅡ)은 초성 아래에, 세로 성분(ㅏ/ㅐ/ㅓ/ㅔ/ㅣ)은 초성 오른쪽에 배치된다.
+    static func mixedVowelComponents(_ jungIndex: Int) -> (horizontal: Int, vertical: Int)? {
+        switch jungIndex {
+        case 9:  return (8, 0)    // ㅘ = ㅗ + ㅏ
+        case 10: return (8, 1)    // ㅙ = ㅗ + ㅐ
+        case 11: return (8, 20)   // ㅚ = ㅗ + ㅣ
+        case 14: return (13, 4)   // ㅝ = ㅜ + ㅓ
+        case 15: return (13, 5)   // ㅞ = ㅜ + ㅔ
+        case 16: return (13, 20)  // ㅟ = ㅜ + ㅣ
+        case 19: return (18, 20)  // ㅢ = ㅡ + ㅣ
+        default: return nil
+        }
+    }
+
+    /// 직접 입력받는 기본 중성 14자 (복합 모음 ㅘㅙㅚㅝㅞㅟㅢ 제외 — 기본 모음으로 합성됨)
+    static let basicJungseongChars: [String] = (0..<jungseongChars.count)
+        .filter { mixedVowelComponents($0) == nil }
+        .map { jungseongChars[$0] }
 
     // MARK: - Path Composition
 
     /// 초성/중성/종성 경로를 배치 규칙에 따라 Em Square 내에 합성
     ///
+    /// - jung: 단일 모음. 복합 모음일 때는 가로 성분(ㅗ/ㅜ/ㅡ).
+    /// - jungExtra: 복합 모음의 세로 성분(ㅏ/ㅐ/ㅓ/ㅔ/ㅣ). 그 외에는 `nil`.
     /// 모든 입력 경로는 Em Square(0,0)–(1000,1000) Y↑ 좌표계를 사용해야 함.
-    static func composePath(cho: CGPath, jung: CGPath, jong: CGPath?, jungIndex: Int) -> CGPath {
-        let hasJong  = jong != nil
-        let vertical = isVerticalVowel(jungIndex)
-        let result   = CGMutablePath()
+    static func composePath(cho: CGPath, jung: CGPath, jungExtra: CGPath? = nil,
+                            jong: CGPath?, jungIndex: Int) -> CGPath {
+        let hasJong = jong != nil
+        let layout  = vowelLayout(jungIndex)
+        let result  = CGMutablePath()
 
-        if vertical {
+        switch layout {
+        case .right:
             // 초성(좌) + 중성(우) — 초성은 오른쪽, 중성은 왼쪽으로 정렬해 간격을 좁힌다.
             if hasJong {
-                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 40,  y: 540, width: 470, height: 460), alignX: 1, alignY: 0.5))
-                result.addPath(jung, transform: fit(jung, into: CGRect(x: 620, y: 540, width: 340, height: 460), alignX: 0, alignY: 0.5))
+                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 40,  y: 570, width: 470, height: 430), alignX: 1, alignY: 0.5))
+                result.addPath(jung, transform: fit(jung, into: CGRect(x: 620, y: 570, width: 340, height: 430), alignX: 0, alignY: 0.5))
             } else {
                 result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 40,  y: 250, width: 470, height: 750), alignX: 1, alignY: 0.5))
                 result.addPath(jung, transform: fit(jung, into: CGRect(x: 620, y: 250, width: 340, height: 750), alignX: 0, alignY: 0.5))
             }
-        } else {
+        case .bottom:
             // 초성(상) + 중성(하) — 초성은 아래, 중성은 위로 정렬해 간격을 좁힌다.
             if hasJong {
-                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 120, y: 720, width: 760, height: 280), alignX: 0.5, alignY: 0))
-                result.addPath(jung, transform: fit(jung, into: CGRect(x: 100, y: 510, width: 800, height: 170), alignX: 0.5, alignY: 0.5))
+                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 120, y: 740, width: 760, height: 260), alignX: 0.5, alignY: 0))
+                result.addPath(jung, transform: fit(jung, into: CGRect(x: 100, y: 500, width: 800, height: 150), alignX: 0.5, alignY: 0.5))
             } else {
-                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 120, y: 540, width: 760, height: 460), alignX: 0.5, alignY: 0))
-                result.addPath(jung, transform: fit(jung, into: CGRect(x: 100, y: 250, width: 800, height: 250), alignX: 0.5, alignY: 1))
+                result.addPath(cho,  transform: fit(cho,  into: CGRect(x: 120, y: 560, width: 760, height: 440), alignX: 0.5, alignY: 0))
+                result.addPath(jung, transform: fit(jung, into: CGRect(x: 100, y: 250, width: 800, height: 220), alignX: 0.5, alignY: 1))
+            }
+        case .mixed:
+            // 복합 모음(ㅘㅙㅚㅝㅞㅟㅢ): 초성(좌상) + 가로성분(초성 아래) + 세로성분(우측 전체)
+            let jungV = jungExtra ?? jung   // 세로 성분 (분해 실패 시 jung으로 폴백)
+            // 초성(좌상) + 가로성분(초성 아래, 크게) + 세로성분(우측, 바닥까지) — 모두 비율 유지
+            if hasJong {
+                result.addPath(cho,   transform: fit(cho,   into: CGRect(x: 60,  y: 700, width: 440, height: 280), alignX: 0.5, alignY: 0.5))
+                result.addPath(jung,  transform: fit(jung,  into: CGRect(x: 40,  y: 480, width: 580, height: 190), alignX: 0.5, alignY: 0.5))
+                result.addPath(jungV, transform: fit(jungV, into: CGRect(x: 600, y: 480, width: 360, height: 500), alignX: 0, alignY: 0.5))
+            } else {
+                result.addPath(cho,   transform: fit(cho,   into: CGRect(x: 60,  y: 620, width: 440, height: 360), alignX: 0.5, alignY: 0.5))
+                result.addPath(jung,  transform: fit(jung,  into: CGRect(x: 40,  y: 300, width: 580, height: 280), alignX: 0.5, alignY: 0.5))
+                result.addPath(jungV, transform: fit(jungV, into: CGRect(x: 600, y: 250, width: 360, height: 730), alignX: 0, alignY: 0.5))
             }
         }
 
         if let jong {
-            let zone = vertical
-                ? CGRect(x: 170, y: 250, width: 660, height: 270)
-                : CGRect(x: 120, y: 250, width: 760, height: 230)
-            result.addPath(jong, transform: fit(jong, into: zone, alignX: 0.5, alignY: 0.5))
+            // 받침은 가로로 넓고 납작한 형태(실제 폰트 관례)이므로 비율 유지 없이 칸을 채운다.
+            let zone = layout == .right
+                ? CGRect(x: 260, y: 250, width: 480, height: 230)
+                : CGRect(x: 220, y: 250, width: 560, height: 230)
+            result.addPath(jong, transform: fill(jong, into: zone))
         }
         return result
     }
@@ -160,6 +220,19 @@ enum HangulComposer {
             a: scale, b: 0, c: 0, d: scale,
             tx: rect.minX + (rect.width  - w) * alignX - b.minX * scale,
             ty: rect.minY + (rect.height - h) * alignY - b.minY * scale
+        )
+    }
+
+    /// 경로의 실제 ink를 목표 rect에 가득 채우는 변환 (가로·세로 독립 스케일, 비율 미유지).
+    private static func fill(_ path: CGPath, into rect: CGRect) -> CGAffineTransform {
+        let b = path.boundingBoxOfPath
+        guard b.width > .ulpOfOne, b.height > .ulpOfOne else { return .identity }
+        let sx = rect.width  / b.width
+        let sy = rect.height / b.height
+        return CGAffineTransform(
+            a: sx, b: 0, c: 0, d: sy,
+            tx: rect.minX - b.minX * sx,
+            ty: rect.minY - b.minY * sy
         )
     }
 }

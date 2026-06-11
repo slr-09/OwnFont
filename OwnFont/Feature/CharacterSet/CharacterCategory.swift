@@ -42,7 +42,7 @@ enum CharacterCategory: CaseIterable {
         case .number:           return 10
         case .symbol:           return 20
         case .hangulChoseong:   return 19
-        case .hangulJungseong:  return 21
+        case .hangulJungseong:  return 14
         }
     }
 
@@ -65,7 +65,7 @@ enum CharacterCategory: CaseIterable {
         case .hangulChoseong:
             return HangulComposer.choseongChars
         case .hangulJungseong:
-            return HangulComposer.jungseongChars
+            return HangulComposer.basicJungseongChars
         }
     }
 

@@ -111,6 +111,12 @@ final class GlyphLayoutManager: NSLayoutManager {
         if let data = GlyphStore.shared.glyph(for: char) {
             return data.normalizedPath
         }
+        // 조합 중 단독 자모(호환 자모 ㅂ·ㅏ 등) → 저장된 초성/중성 글리프로 렌더
+        if let first = char.first,
+           let key = HangulComposer.standaloneGlyphKey(for: first),
+           let data = GlyphStore.shared.glyph(for: key) {
+            return data.normalizedPath
+        }
         return hangulComposedPath(for: char)
     }
 
@@ -118,12 +124,24 @@ final class GlyphLayoutManager: NSLayoutManager {
         guard let first = char.first,
               let components = HangulComposer.decompose(first) else { return nil }
 
-        let choKey  = HangulComposer.choseongChars[components.cho]
-        let jungKey = HangulComposer.jungseongChars[components.jung]
+        let choKey = HangulComposer.choseongChars[components.cho]
+        guard let choPath = GlyphStore.shared.glyph(for: choKey)?.normalizedPath else { return nil }
 
-        guard let choPath  = GlyphStore.shared.glyph(for: choKey)?.normalizedPath,
-              let jungPath = GlyphStore.shared.glyph(for: jungKey)?.normalizedPath
-        else { return nil }
+        // 중성: 복합 모음(ㅚ·ㅞ 등)이면 가로/세로 기본 모음 글리프로 분해
+        let jungPath: CGPath
+        let jungExtraPath: CGPath?
+        if let parts = HangulComposer.mixedVowelComponents(components.jung) {
+            guard let h = GlyphStore.shared.glyph(for: HangulComposer.jungseongChars[parts.horizontal])?.normalizedPath,
+                  let v = GlyphStore.shared.glyph(for: HangulComposer.jungseongChars[parts.vertical])?.normalizedPath
+            else { return nil }
+            jungPath = h
+            jungExtraPath = v
+        } else {
+            guard let j = GlyphStore.shared.glyph(for: HangulComposer.jungseongChars[components.jung])?.normalizedPath
+            else { return nil }
+            jungPath = j
+            jungExtraPath = nil
+        }
 
         let jongPath: CGPath?
         if components.jong >= 0 {
@@ -136,8 +154,8 @@ final class GlyphLayoutManager: NSLayoutManager {
             jongPath = nil
         }
 
-        return HangulComposer.composePath(cho: choPath, jung: jungPath, jong: jongPath,
-                                          jungIndex: components.jung)
+        return HangulComposer.composePath(cho: choPath, jung: jungPath, jungExtra: jungExtraPath,
+                                          jong: jongPath, jungIndex: components.jung)
     }
 }
 
