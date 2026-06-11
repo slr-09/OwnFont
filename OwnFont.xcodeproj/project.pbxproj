@@ -55,12 +55,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		231913412FDAA04300DFC90C /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				2319117F2FD810E600DFC90C /* Release.xcconfig */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		2344B86F2F86B32E0096F844 = {
 			isa = PBXGroup;
 			children = (
 				2344B87A2F86B32E0096F844 /* OwnFont */,
 				2399B0482F8E8A6A00A562D2 /* Frameworks */,
 				2344B8792F86B32E0096F844 /* Products */,
+				231913412FDAA04300DFC90C /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};

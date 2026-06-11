@@ -8,6 +8,7 @@
 import Combine
 import UIKit
 import SnapKit
+import GoogleMobileAds
 
 final class CharacterSetViewController: UIViewController {
     private let scrollView = UIScrollView()
@@ -52,6 +53,10 @@ final class CharacterSetViewController: UIViewController {
 
     private var cardViews: [CategoryCardView] = []
     private var cancellables = Set<AnyCancellable>()
+    private var adLoader: AdLoader?
+    private var nativeAdCardView: NativeAdCardView?
+
+    private static let nativeAdInsertIndex = 3
 
     // MARK: - Lifecycle
 
@@ -60,6 +65,7 @@ final class CharacterSetViewController: UIViewController {
         setupUI()
         updateCompletionCounts()
         bindStore()
+        loadNativeAd()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -120,6 +126,28 @@ final class CharacterSetViewController: UIViewController {
         }
     }
 
+    // MARK: - Native Ad
+
+    private func loadNativeAd() {
+        guard let adUnitID = Bundle.main.object(forInfoDictionaryKey: "AdMobNativeID") as? String else { return }
+        let multipleAdsOptions = MultipleAdsAdLoaderOptions()
+        multipleAdsOptions.numberOfAds = 1
+        adLoader = AdLoader(
+            adUnitID: adUnitID,
+            rootViewController: self,
+            adTypes: [.native],
+            options: [multipleAdsOptions]
+        )
+        adLoader?.delegate = self
+        adLoader?.load(Request())
+    }
+
+    private func insertNativeAdView(_ adView: NativeAdCardView) {
+        nativeAdCardView = adView
+        let insertIndex = min(Self.nativeAdInsertIndex, cardListStackView.arrangedSubviews.count)
+        cardListStackView.insertArrangedSubview(adView, at: insertIndex)
+    }
+
     // MARK: - Bind
 
     private func bindStore() {
@@ -144,4 +172,23 @@ final class CharacterSetViewController: UIViewController {
         }
         editorButton.isHidden = totalCompleted == 0
     }
+}
+
+// MARK: - GADNativeAdLoaderDelegate
+
+extension CharacterSetViewController: NativeAdLoaderDelegate {
+    func adLoader(_ adLoader: AdLoader, didReceive nativeAd: NativeAd) {
+        let adCardView = NativeAdCardView()
+        adCardView.configure(with: nativeAd)
+        nativeAd.delegate = self
+        insertNativeAdView(adCardView)
+    }
+
+    func adLoader(_ adLoader: AdLoader, didFailToReceiveAdWithError error: Error) {}
+}
+
+// MARK: - NativeAdDelegate
+
+extension CharacterSetViewController: NativeAdDelegate {
+    func nativeAdDidRecordImpression(_ nativeAd: NativeAd) {}
 }
