@@ -426,6 +426,40 @@
         }
       }
     },
+    "category.hangulChoseong" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hangul Consonants"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "한글 자음"
+          }
+        }
+      }
+    },
+    "category.hangulJungseong" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hangul Vowels"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "한글 모음"
+          }
+        }
+      }
+    },
     "characterSet.editorButton" : {
       "extractionState" : "stale",
       "localizations" : {

@@ -33,10 +33,12 @@ static var tabBarCharacterIcon:   String {
     static var sizeLarge:  String { s("size.large") }
 
     // MARK: - Category
-    static var categoryLowercaseLatin: String { s("category.lowercaseLatin") }
-    static var categoryUppercaseLatin: String { s("category.uppercaseLatin") }
-    static var categoryNumber:         String { s("category.number") }
-    static var categorySymbol:         String { s("category.symbol") }
+    static var categoryLowercaseLatin:  String { s("category.lowercaseLatin") }
+    static var categoryUppercaseLatin:  String { s("category.uppercaseLatin") }
+    static var categoryNumber:          String { s("category.number") }
+    static var categorySymbol:          String { s("category.symbol") }
+    static var categoryHangulChoseong:  String { s("category.hangulChoseong") }
+    static var categoryHangulJungseong: String { s("category.hangulJungseong") }
 
     static func categorySubtitle(rangeLabel: String, completedCount: Int, totalCount: Int) -> String {
         LanguageManager.shared.string("category.subtitle", rangeLabel, completedCount, totalCount)

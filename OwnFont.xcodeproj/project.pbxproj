@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2319117C2FD8087D00DFC90C /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 2319117B2FD8087D00DFC90C /* GoogleMobileAds */; };
 		2344B8AC2F86C1D90096F844 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2344B8AB2F86C1D90096F844 /* SnapKit */; };
 		2399AAD12F8D417C00A562D2 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2399AAD02F8D417C00A562D2 /* FirebaseCrashlytics */; };
 		2399B04A2F8E8A6A00A562D2 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2399B0492F8E8A6A00A562D2 /* FirebaseAnalytics */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		2319117F2FD810E600DFC90C /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OwnFont/Release.xcconfig; sourceTree = "<group>"; };
 		2344B8782F86B32E0096F844 /* OwnFont.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OwnFont.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -21,6 +23,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				Release.xcconfig,
 			);
 			target = 2344B8772F86B32E0096F844 /* OwnFont */;
 		};
@@ -42,6 +45,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2319117C2FD8087D00DFC90C /* GoogleMobileAds in Frameworks */,
 				2399AAD12F8D417C00A562D2 /* FirebaseCrashlytics in Frameworks */,
 				2344B8AC2F86C1D90096F844 /* SnapKit in Frameworks */,
 				2399B04A2F8E8A6A00A562D2 /* FirebaseAnalytics in Frameworks */,
@@ -51,12 +55,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		231913412FDAA04300DFC90C /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				2319117F2FD810E600DFC90C /* Release.xcconfig */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		2344B86F2F86B32E0096F844 = {
 			isa = PBXGroup;
 			children = (
 				2344B87A2F86B32E0096F844 /* OwnFont */,
 				2399B0482F8E8A6A00A562D2 /* Frameworks */,
 				2344B8792F86B32E0096F844 /* Products */,
+				231913412FDAA04300DFC90C /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -99,6 +112,7 @@
 				2344B8AB2F86C1D90096F844 /* SnapKit */,
 				2399AAD02F8D417C00A562D2 /* FirebaseCrashlytics */,
 				2399B0492F8E8A6A00A562D2 /* FirebaseAnalytics */,
+				2319117B2FD8087D00DFC90C /* GoogleMobileAds */,
 			);
 			productName = OwnFont;
 			productReference = 2344B8782F86B32E0096F844 /* OwnFont.app */;
@@ -132,6 +146,7 @@
 			packageReferences = (
 				2344B8AA2F86C1D90096F844 /* XCRemoteSwiftPackageReference "SnapKit" */,
 				2399AACD2F8D417C00A562D2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				2319117A2FD8087D00DFC90C /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2344B8792F86B32E0096F844 /* Products */;
@@ -189,11 +204,13 @@
 /* Begin XCBuildConfiguration section */
 		2344B88C2F86B3310096F844 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 2344B87A2F86B32E0096F844 /* OwnFont */;
+			baseConfigurationReferenceRelativePath = Debug.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = ZT27N85LQ5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = OwnFont/Info.plist;
@@ -207,7 +224,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.1;
+				MARKETING_VERSION = 1.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.siro.OwnFont;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -226,11 +243,12 @@
 		};
 		2344B88D2F86B3310096F844 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2319117F2FD810E600DFC90C /* Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = ZT27N85LQ5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = OwnFont/Info.plist;
@@ -244,7 +262,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.1;
+				MARKETING_VERSION = 1.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.siro.OwnFont;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -263,6 +281,8 @@
 		};
 		2344B88E2F86B3310096F844 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 2344B87A2F86B32E0096F844 /* OwnFont */;
+			baseConfigurationReferenceRelativePath = Debug.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -328,6 +348,7 @@
 		};
 		2344B88F2F86B3310096F844 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2319117F2FD810E600DFC90C /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -408,6 +429,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		2319117A2FD8087D00DFC90C /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.4.0;
+			};
+		};
 		2344B8AA2F86C1D90096F844 /* XCRemoteSwiftPackageReference "SnapKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/SnapKit/SnapKit.git";
@@ -427,6 +456,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		2319117B2FD8087D00DFC90C /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2319117A2FD8087D00DFC90C /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
 		2344B8AB2F86C1D90096F844 /* SnapKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 2344B8AA2F86C1D90096F844 /* XCRemoteSwiftPackageReference "SnapKit" */;

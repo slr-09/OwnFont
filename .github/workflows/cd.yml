@@ -48,6 +48,11 @@ jobs:
       - name: Write GoogleService-Info.plist
         run: echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > OwnFont/GoogleService-Info.plist
 
+      - name: Write xcconfig files
+        run: |
+          echo "${{ secrets.RELEASE_XCCONFIG_BASE64 }}" | base64 --decode > OwnFont/Release.xcconfig
+          echo "${{ secrets.DEBUG_XCCONFIG_BASE64 }}" | base64 --decode > OwnFont/Debug.xcconfig
+
       - name: Upload to TestFlight
         env:
           BUILD_NUMBER: ${{ github.run_number }}
