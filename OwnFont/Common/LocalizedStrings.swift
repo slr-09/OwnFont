@@ -1,102 +1,110 @@
 //
-//  L.swift
+//  LocalizedStrings.swift
 //  OwnFont
 //
 
 import Foundation
 
 enum L {
+    private static func s(_ key: String) -> String { LanguageManager.shared.string(key) }
+
     // MARK: - Tab Bar
-    static let tabBarDecorate        = String(localized: "tabBar.decorate")
-    static let tabBarCharacterSet    = String(localized: "tabBar.characterSet")
-    static let tabBarCharacterIcon   = Locale.current.language.languageCode?.identifier == "ko" ? "character.ko" : "character"
+    static var tabBarDecorate:        String { s("tabBar.decorate") }
+    static var tabBarCharacterSet:    String { s("tabBar.characterSet") }
+static var tabBarCharacterIcon:   String {
+        LanguageManager.shared.effectiveLanguageCode == "ko" ? "character.ko" : "character"
+    }
 
     // MARK: - Badge
-    static let badgeNotStarted       = String(localized: "badge.notStarted")
-    static let badgeInProgress       = String(localized: "badge.inProgress")
-    static let badgeCompleted        = String(localized: "badge.completed")
+    static var badgeNotStarted:  String { s("badge.notStarted") }
+    static var badgeInProgress:  String { s("badge.inProgress") }
+    static var badgeCompleted:   String { s("badge.completed") }
 
     // MARK: - Buttons
-    static let buttonSave            = String(localized: "button.save")
-    static let buttonDone            = String(localized: "button.done")
-    static let buttonDelete          = String(localized: "button.delete")
-    static let buttonCancel          = String(localized: "button.cancel")
-    static let buttonConfirm         = String(localized: "button.confirm")
+    static var buttonSave:    String { s("button.save") }
+    static var buttonDone:    String { s("button.done") }
+    static var buttonDelete:  String { s("button.delete") }
+    static var buttonCancel:  String { s("button.cancel") }
+    static var buttonConfirm: String { s("button.confirm") }
 
     // MARK: - Size Segment
-    static let sizeSmall             = String(localized: "size.small")
-    static let sizeMedium            = String(localized: "size.medium")
-    static let sizeLarge             = String(localized: "size.large")
+    static var sizeSmall:  String { s("size.small") }
+    static var sizeMedium: String { s("size.medium") }
+    static var sizeLarge:  String { s("size.large") }
 
     // MARK: - Category
-    static let categoryLowercaseLatin = String(localized: "category.lowercaseLatin")
-    static let categoryUppercaseLatin = String(localized: "category.uppercaseLatin")
-    static let categoryNumber         = String(localized: "category.number")
-    static let categorySymbol         = String(localized: "category.symbol")
+    static var categoryLowercaseLatin: String { s("category.lowercaseLatin") }
+    static var categoryUppercaseLatin: String { s("category.uppercaseLatin") }
+    static var categoryNumber:         String { s("category.number") }
+    static var categorySymbol:         String { s("category.symbol") }
 
     static func categorySubtitle(rangeLabel: String, completedCount: Int, totalCount: Int) -> String {
-        String(format: String(localized: "category.subtitle"), rangeLabel, completedCount, totalCount)
+        LanguageManager.shared.string("category.subtitle", rangeLabel, completedCount, totalCount)
     }
 
     // MARK: - Character Set
-    static let characterSetTitle        = String(localized: "characterSet.title")
-    static let characterSetSubtitle     = String(localized: "characterSet.subtitle")
-    static let characterSetEditorButton = String(localized: "characterSet.editorButton")
+    static var characterSetTitle:        String { s("characterSet.title") }
+    static var characterSetSubtitle:     String { s("characterSet.subtitle") }
+    static var characterSetEditorButton: String { s("characterSet.editorButton") }
 
     // MARK: - Text Editor
-    static let textEditorTitle       = String(localized: "textEditor.title")
-    static let textEditorPlaceholder = String(localized: "textEditor.placeholder")
-    static let textEditorFontSize    = String(localized: "textEditor.fontSize")
+    static var textEditorTitle:       String { s("textEditor.title") }
+    static var textEditorPlaceholder: String { s("textEditor.placeholder") }
+    static var textEditorFontSize:    String { s("textEditor.fontSize") }
 
     // MARK: - Character Writing
-    static let characterWritingTitle          = String(localized: "characterWriting.title")
-    static let characterWritingCompletedChars = String(localized: "characterWriting.completedChars")
-    static let characterWritingCurrentChar    = String(localized: "characterWriting.currentChar")
-    static let characterWritingNextChar       = String(localized: "characterWriting.nextChar")
+    static var characterWritingTitle:          String { s("characterWriting.title") }
+    static var characterWritingCompletedChars: String { s("characterWriting.completedChars") }
+    static var characterWritingCurrentChar:    String { s("characterWriting.currentChar") }
+    static var characterWritingNextChar:       String { s("characterWriting.nextChar") }
 
     // MARK: - Card Home
-    static let cardHomeMemoTitle     = String(localized: "cardHome.memoTitle")
-    static let cardHomeMemoSubtitle  = String(localized: "cardHome.memoSubtitle")
-    static let cardHomePhotoSubtitle = String(localized: "cardHome.photoSubtitle")
+    static var cardHomeMemoTitle:     String { s("cardHome.memoTitle") }
+    static var cardHomeMemoSubtitle:  String { s("cardHome.memoSubtitle") }
+    static var cardHomePhotoSubtitle: String { s("cardHome.photoSubtitle") }
 
     // MARK: - Card Decorate
-    static let cardDecorateTitle            = String(localized: "cardDecorate.title")
-    static let cardDecorateMainPlaceholder  = String(localized: "cardDecorate.mainTextPlaceholder")
-    static let cardDecorateSubPlaceholder   = String(localized: "cardDecorate.subTextPlaceholder")
+    static var cardDecorateTitle:           String { s("cardDecorate.title") }
+    static var cardDecorateMainPlaceholder: String { s("cardDecorate.mainTextPlaceholder") }
+    static var cardDecorateSubPlaceholder:  String { s("cardDecorate.subTextPlaceholder") }
 
     // MARK: - Photo Decorate
-    static let photoDecorateTitle    = String(localized: "photoDecorate.title")
+    static var photoDecorateTitle: String { s("photoDecorate.title") }
 
     // MARK: - Segment
-    static let segmentText           = String(localized: "segment.text")
-    static let segmentColor          = String(localized: "segment.color")
+    static var segmentText:  String { s("segment.text") }
+    static var segmentColor: String { s("segment.color") }
 
     // MARK: - Color Section
-    static let colorSectionBackground = String(localized: "colorSection.background")
-    static let colorSectionText       = String(localized: "colorSection.text")
+    static var colorSectionBackground: String { s("colorSection.background") }
+    static var colorSectionText:       String { s("colorSection.text") }
 
     // MARK: - Memo Card
-    static let memoCardMainPlaceholder = String(localized: "memoCard.mainPlaceholder")
-    static let memoCardSubPlaceholder  = String(localized: "memoCard.subPlaceholder")
+    static var memoCardMainPlaceholder: String { s("memoCard.mainPlaceholder") }
+    static var memoCardSubPlaceholder:  String { s("memoCard.subPlaceholder") }
 
     // MARK: - Instagram
-    static let instagramStory             = String(localized: "instagram.story")
-    static let instagramShareAccessibility = String(localized: "instagram.shareAccessibility")
+    static var instagramStory:              String { s("instagram.story") }
+    static var instagramShareAccessibility: String { s("instagram.shareAccessibility") }
 
     // MARK: - Alerts
-    static let alertShareFailedTitle   = String(localized: "alert.shareFailed.title")
-    static let alertShareFailedMessage = String(localized: "alert.shareFailed.message")
-    static let alertSaveFailedTitle    = String(localized: "alert.saveFailed.title")
-    static let alertSaveFailedMessage  = String(localized: "alert.saveFailed.message")
+    static var alertShareFailedTitle:   String { s("alert.shareFailed.title") }
+    static var alertShareFailedMessage: String { s("alert.shareFailed.message") }
+    static var alertSaveFailedTitle:    String { s("alert.saveFailed.title") }
+    static var alertSaveFailedMessage:  String { s("alert.saveFailed.message") }
 
     static func alertClearAllTitle(_ categoryTitle: String) -> String {
-        String(format: String(localized: "alert.clearAll.title"), categoryTitle)
+        LanguageManager.shared.string("alert.clearAll.title", categoryTitle)
     }
     static func alertClearAllMessage(_ categoryTitle: String) -> String {
-        String(format: String(localized: "alert.clearAll.message"), categoryTitle)
+        LanguageManager.shared.string("alert.clearAll.message", categoryTitle)
     }
 
     // MARK: - Toast
-    static let toastSaveFailed    = String(localized: "toast.saveFailed")
-    static let toastSaveCompleted = String(localized: "toast.saveCompleted")
+    static var toastSaveFailed:    String { s("toast.saveFailed") }
+    static var toastSaveCompleted: String { s("toast.saveCompleted") }
+
+    // MARK: - Settings
+    static var settingsTitle:    String { s("settings.title") }
+    static var settingsLanguage: String { s("settings.language") }
 }

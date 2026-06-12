@@ -32,7 +32,7 @@ final class MainTabBarController: UITabBarController {
 
         viewControllers = [cardNav, charNav]
     }
-
+ 
     private func setupAppearance() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()

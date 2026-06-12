@@ -50,6 +50,16 @@ final class CharacterSetViewController: UIViewController {
         return sv
     }()
 
+    private let settingsButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.backgroundColor = .surfaceSecondary
+        btn.layer.cornerRadius = 18
+        btn.tintColor = .textPrimary
+        let cfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        btn.setImage(UIImage(systemName: "gearshape", withConfiguration: cfg), for: .normal)
+        return btn
+    }()
+
     private var cardViews: [CategoryCardView] = []
     private var cancellables = Set<AnyCancellable>()
 
@@ -64,9 +74,14 @@ final class CharacterSetViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
     }
 
     // MARK: - Actions
+
+    @objc private func settingsTapped() {
+        navigationController?.pushViewController(SettingsViewController(), animated: true)
+    }
 
     @objc private func editorButtonTapped() {
         let vc = TextEditorViewController()
@@ -90,10 +105,17 @@ final class CharacterSetViewController: UIViewController {
 
     private func setupUI() {
         view.backgroundColor = .background
-        navigationController?.navigationBar.isHidden = true
 
         view.addSubview(scrollView)
         scrollView.addSubview(contentStackView)
+        view.addSubview(settingsButton)
+
+        settingsButton.addTarget(self, action: #selector(settingsTapped), for: .touchUpInside)
+        settingsButton.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(20)
+            make.top.equalTo(view.safeAreaLayoutGuide).inset(20)
+            make.size.equalTo(36)
+        }
 
         contentStackView.addArrangedSubview(headerView)
         contentStackView.addArrangedSubview(editorButton)

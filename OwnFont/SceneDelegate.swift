@@ -17,6 +17,20 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.rootViewController = MainTabBarController()
         window?.overrideUserInterfaceStyle = .light
         window?.makeKeyAndVisible()
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleLanguageChange),
+            name: LanguageManager.languageDidChange,
+            object: nil
+        )
+    }
+
+    @objc private func handleLanguageChange() {
+        guard let window else { return }
+        UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve) {
+            window.rootViewController = MainTabBarController()
+        }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {}

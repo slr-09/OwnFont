@@ -19,6 +19,16 @@ final class CardHomeViewController: UIViewController {
         return l
     }()
 
+    private let settingsButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.backgroundColor = .surfaceSecondary
+        btn.layer.cornerRadius = 18
+        btn.tintColor = .textPrimary
+        let cfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        btn.setImage(UIImage(systemName: "gearshape", withConfiguration: cfg), for: .normal)
+        return btn
+    }()
+
     private let memoCard = CardHomeViewController.makeEntryCard(
         iconName: "doc.text",
         accentColor: .indigo,
@@ -53,12 +63,18 @@ final class CardHomeViewController: UIViewController {
 
     private func setupLayout() {
         view.addSubview(titleLabel)
+        view.addSubview(settingsButton)
         view.addSubview(memoCard)
         view.addSubview(photoCard)
 
         titleLabel.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide).inset(20)
             make.leading.equalToSuperview().inset(20)
+        }
+        settingsButton.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(20)
+            make.centerY.equalTo(titleLabel)
+            make.size.equalTo(36)
         }
         memoCard.snp.makeConstraints { make in
             make.top.equalTo(titleLabel.snp.bottom).offset(20)
@@ -75,6 +91,7 @@ final class CardHomeViewController: UIViewController {
     // MARK: - Actions
 
     private func setupActions() {
+        settingsButton.addTarget(self, action: #selector(settingsTapped), for: .touchUpInside)
         addCardGesture(to: memoCard) { [weak self] in
             AnalyticsManager.shared.log(.decorateMemoOpened)
             let vc = CardDecorateViewController()
@@ -84,6 +101,10 @@ final class CardHomeViewController: UIViewController {
             AnalyticsManager.shared.log(.decoratePhotoOpened)
             self?.presentPhotoPicker()
         }
+    }
+
+    @objc private func settingsTapped() {
+        navigationController?.pushViewController(SettingsViewController(), animated: true)
     }
 
     private func addCardGesture(to card: UIView, onTap: @escaping () -> Void) {
