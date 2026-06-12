@@ -43,7 +43,7 @@ final class CharacterWritingView: UIView {
 
     private let navTitleLabel: UILabel = {
         let l = UILabel()
-        l.text = "글자 쓰기"
+        l.text = L.characterWritingTitle
         l.font = .cardHeader
         l.textColor = .textPrimary
         return l
@@ -76,7 +76,7 @@ final class CharacterWritingView: UIView {
     // MARK: - Char Grid
     private let charGridLabel: UILabel = {
         let l = UILabel()
-        l.text = "완성된 글자"
+        l.text = L.characterWritingCompletedChars
         l.font = .caption
         l.textColor = .textHint
         return l
@@ -109,7 +109,7 @@ final class CharacterWritingView: UIView {
 
     private let currentCharHintLabel: UILabel = {
         let l = UILabel()
-        l.text = "현재 글자:"
+        l.text = L.characterWritingCurrentChar
         l.font = .subLabel
         l.textColor = .textHint
         return l
@@ -147,7 +147,7 @@ final class CharacterWritingView: UIView {
         btn.layer.cornerRadius = 20
         var config = UIButton.Configuration.plain()
         config.attributedTitle = AttributedString(
-            "다음 글자",
+            L.characterWritingNextChar,
             attributes: AttributeContainer([
                 .font: UIFont.body,
                 .foregroundColor: UIColor.white
@@ -401,13 +401,13 @@ final class CharacterWritingView: UIView {
         let symCfg = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
         switch mode {
         case .next:
-            config.attributedTitle = AttributedString("다음 글자", attributes: titleAttrs)
+            config.attributedTitle = AttributedString(L.characterWritingNextChar, attributes: titleAttrs)
             config.image = UIImage(systemName: "chevron.right", withConfiguration: symCfg)
         case .done:
-            config.attributedTitle = AttributedString("완료", attributes: titleAttrs)
+            config.attributedTitle = AttributedString(L.buttonDone, attributes: titleAttrs)
             config.image = UIImage(systemName: "checkmark", withConfiguration: symCfg)
         case .save:
-            config.attributedTitle = AttributedString("저장", attributes: titleAttrs)
+            config.attributedTitle = AttributedString(L.buttonSave, attributes: titleAttrs)
             config.image = UIImage(systemName: "square.and.arrow.down", withConfiguration: symCfg)
         }
         nextButton.configuration = config

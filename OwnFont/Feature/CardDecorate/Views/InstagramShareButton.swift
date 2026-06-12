@@ -41,7 +41,7 @@ final class InstagramShareButton: UIControl {
 
     private let titleLabel: UILabel = {
         let l = UILabel()
-        l.text = "스토리"
+        l.text = L.instagramStory
         l.font = .systemFont(ofSize: 11, weight: .semibold)
         l.textColor = .white
         l.isUserInteractionEnabled = false
@@ -75,7 +75,7 @@ final class InstagramShareButton: UIControl {
             make.centerY.equalToSuperview()
         }
 
-        accessibilityLabel = "인스타그램 스토리에 공유"
+        accessibilityLabel = L.instagramShareAccessibility
         accessibilityTraits = .button
     }
 

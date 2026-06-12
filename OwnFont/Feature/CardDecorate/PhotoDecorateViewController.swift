@@ -44,7 +44,7 @@ final class PhotoDecorateViewController: UIViewController {
 
     private let titleLabel: UILabel = {
         let l = UILabel()
-        l.text = "사진 꾸미기"
+        l.text = L.photoDecorateTitle
         l.font = .cardHeader
         l.textColor = .textPrimary
         return l
@@ -68,7 +68,7 @@ final class PhotoDecorateViewController: UIViewController {
         btn.layer.cornerRadius = 16
         var config = UIButton.Configuration.plain()
         config.attributedTitle = AttributedString(
-            "저장",
+            L.buttonSave,
             attributes: AttributeContainer([
                 .font: UIFont.body,
                 .foregroundColor: UIColor.white
@@ -262,7 +262,7 @@ final class PhotoDecorateViewController: UIViewController {
         let pngData = renderCompositeImage()
         let ok = InstagramStoryShareService.share(pngData: pngData)
         if !ok {
-            showAlert(title: "공유 실패", message: "인스타그램이 설치되어 있어야 스토리로 공유할 수 있어요.")
+            showAlert(title: L.alertShareFailedTitle, message: L.alertShareFailedMessage)
         }
     }
 
@@ -414,7 +414,7 @@ final class PhotoDecorateViewController: UIViewController {
 
     private func addOverlayTopBar(to overlay: UIView) -> (close: UIButton, done: UIButton) {
         let closeBtn = makeOverlayIconButton(systemName: "xmark")
-        let doneBtn = makeOverlayTextButton(title: "완료")
+        let doneBtn = makeOverlayTextButton(title: L.buttonDone)
         overlay.addSubview(closeBtn)
         overlay.addSubview(doneBtn)
         closeBtn.snp.makeConstraints { make in
@@ -603,7 +603,7 @@ final class PhotoDecorateViewController: UIViewController {
     }
 
     private func makeSizeSegment() -> UISegmentedControl {
-        let sc = UISegmentedControl(items: ["소", "중", "대"])
+        let sc = UISegmentedControl(items: [L.sizeSmall, L.sizeMedium, L.sizeLarge])
         sc.selectedSegmentIndex = Self.fontSizes.firstIndex(of: currentFontSize) ?? 1
         sc.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .normal)
         sc.setTitleTextAttributes([.foregroundColor: UIColor.black], for: .selected)
@@ -689,7 +689,7 @@ final class PhotoDecorateViewController: UIViewController {
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { [weak self] status in
             DispatchQueue.main.async {
                 guard status == .authorized || status == .limited else {
-                    self?.showAlert(title: "저장 실패", message: "사진 접근 권한이 필요합니다.\n설정에서 허용해주세요.")
+                    self?.showAlert(title: L.alertSaveFailedTitle, message: L.alertSaveFailedMessage)
                     return
                 }
                 PHPhotoLibrary.shared().performChanges({
@@ -697,7 +697,7 @@ final class PhotoDecorateViewController: UIViewController {
                     request.addResource(with: .photo, data: data, options: nil)
                 }) { _, error in
                     DispatchQueue.main.async {
-                        ToastManager.show(error != nil ? "저장 실패" : "저장 완료",
+                        ToastManager.show(error != nil ? L.toastSaveFailed : L.toastSaveCompleted,
                                           style: error != nil ? .error : .success)
                     }
                 }
@@ -707,7 +707,7 @@ final class PhotoDecorateViewController: UIViewController {
 
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "확인", style: .default))
+        alert.addAction(UIAlertAction(title: L.buttonConfirm, style: .default))
         present(alert, animated: true)
     }
 }

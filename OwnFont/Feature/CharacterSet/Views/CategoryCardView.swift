@@ -61,7 +61,7 @@ final class CategoryCardView: UIView {
 
     private let badgeLabel: UILabel = {
         let label = UILabel()
-        label.text = "시작 전"
+        label.text = L.badgeNotStarted
         label.font = .badge
         label.textColor = .textHint
         label.textAlignment = .center
@@ -179,17 +179,17 @@ final class CategoryCardView: UIView {
         // 배지 상태
         switch completedCount {
         case 0:
-            badgeLabel.text = "시작 전"
+            badgeLabel.text = L.badgeNotStarted
             badgeView.backgroundColor = .surfaceSecondary
             badgeLabel.textColor = .textHint
             progressBarFill.backgroundColor = .primary
         case total:
-            badgeLabel.text = "완료"
+            badgeLabel.text = L.badgeCompleted
             badgeView.backgroundColor = .greenLight
             badgeLabel.textColor = .green
             progressBarFill.backgroundColor = .green
         default:
-            badgeLabel.text = "진행 중"
+            badgeLabel.text = L.badgeInProgress
             badgeView.backgroundColor = .amberLight
             badgeLabel.textColor = .amberDark
             progressBarFill.backgroundColor = .amber

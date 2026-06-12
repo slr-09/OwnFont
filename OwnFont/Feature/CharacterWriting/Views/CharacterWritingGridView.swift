@@ -39,7 +39,7 @@ final class CharacterWritingGridView: UIView {
 
     private let navTitleLabel: UILabel = {
         let l = UILabel()
-        l.text = "글자 쓰기"
+        l.text = L.characterWritingTitle
         l.font = .cardHeader
         l.textColor = .textPrimary
         return l

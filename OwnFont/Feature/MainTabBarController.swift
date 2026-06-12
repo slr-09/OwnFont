@@ -17,7 +17,7 @@ final class MainTabBarController: UITabBarController {
         let cardHomeVC = CardHomeViewController()
         let cardNav = UINavigationController(rootViewController: cardHomeVC)
         cardNav.tabBarItem = UITabBarItem(
-            title: "꾸미기",
+            title: L.tabBarDecorate,
             image: UIImage(systemName: "rectangle.and.pencil.and.ellipsis"),
             selectedImage: UIImage(systemName: "rectangle.and.pencil.and.ellipsis.rtl")
         )
@@ -25,9 +25,9 @@ final class MainTabBarController: UITabBarController {
         let characterSetVC = CharacterSetViewController()
         let charNav = UINavigationController(rootViewController: characterSetVC)
         charNav.tabBarItem = UITabBarItem(
-            title: "글자 세트",
-            image: UIImage(systemName: "character.ko"),
-            selectedImage: UIImage(systemName: "character.ko")
+            title: L.tabBarCharacterSet,
+            image: UIImage(systemName: L.tabBarCharacterIcon),
+            selectedImage: UIImage(systemName: L.tabBarCharacterIcon)
         )
 
         viewControllers = [cardNav, charNav]

@@ -13,7 +13,7 @@ final class CardHomeViewController: UIViewController {
 
     private let titleLabel: UILabel = {
         let l = UILabel()
-        l.text = "꾸미기"
+        l.text = L.tabBarDecorate
         l.font = .cardTitle
         l.textColor = .textTitle
         return l
@@ -23,16 +23,16 @@ final class CardHomeViewController: UIViewController {
         iconName: "doc.text",
         accentColor: .indigo,
         subtleColor: .indigoSubtle,
-        title: "메모지 꾸미기",
-        subtitle: "예쁜 메모지에 글씨를 적어보세요"
+        title: L.cardHomeMemoTitle,
+        subtitle: L.cardHomeMemoSubtitle
     )
 
     private let photoCard = CardHomeViewController.makeEntryCard(
         iconName: "photo.on.rectangle.angled",
         accentColor: .primary,
         subtleColor: .primarySubtle,
-        title: "사진 꾸미기",
-        subtitle: "사진 위에 나만의 폰트로 글씨를 써보세요"
+        title: L.photoDecorateTitle,
+        subtitle: L.cardHomePhotoSubtitle
     )
 
     // MARK: - Lifecycle

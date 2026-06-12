@@ -38,7 +38,7 @@ final class TextEditorView: UIView {
 
     private let titleLabel: UILabel = {
         let l = UILabel()
-        l.text = "내 손글씨"
+        l.text = L.textEditorTitle
         l.font = .bodyHeader
         l.textColor = .textPrimary
         return l
@@ -70,7 +70,7 @@ final class TextEditorView: UIView {
 
     private let placeholderLabel: UILabel = {
         let l = UILabel()
-        l.text = "텍스트를 입력하세요"
+        l.text = L.textEditorPlaceholder
         l.font = .cardTitle
         l.textColor = .textHint
         l.numberOfLines = 0
@@ -89,14 +89,14 @@ final class TextEditorView: UIView {
 
     private let sizeLabel: UILabel = {
         let l = UILabel()
-        l.text = "글자 크기"
+        l.text = L.textEditorFontSize
         l.font = .subLabel
         l.textColor = .textHint
         return l
     }()
 
     private lazy var sizeSegment: UISegmentedControl = {
-        let sc = UISegmentedControl(items: ["소", "중", "대"])
+        let sc = UISegmentedControl(items: [L.sizeSmall, L.sizeMedium, L.sizeLarge])
         sc.selectedSegmentIndex = 1
         sc.addTarget(self, action: #selector(sizeChanged), for: .valueChanged)
         return sc

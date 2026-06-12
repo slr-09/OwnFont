@@ -20,7 +20,7 @@ final class CardDecorateViewController: UIViewController {
     // MARK: - Lifecycle
 
     override func loadView() {
-        view = CardDecorateView(title: "메모지 꾸미기")
+        view = CardDecorateView(title: L.cardDecorateTitle)
     }
 
     override func viewDidLoad() {
@@ -141,7 +141,7 @@ final class CardDecorateViewController: UIViewController {
         let pngData = renderCardPNG()
         let ok = InstagramStoryShareService.share(pngData: pngData)
         if !ok {
-            showAlert(title: "공유 실패", message: "인스타그램이 설치되어 있어야 스토리로 공유할 수 있어요.")
+            showAlert(title: L.alertShareFailedTitle, message: L.alertShareFailedMessage)
         }
     }
 
@@ -152,7 +152,7 @@ final class CardDecorateViewController: UIViewController {
                 case .authorized, .limited:
                     authorized()
                 default:
-                    self?.showAlert(title: "저장 실패", message: "사진 접근 권한이 필요합니다.\n설정에서 허용해주세요.")
+                    self?.showAlert(title: L.alertSaveFailedTitle, message: L.alertSaveFailedMessage)
                 }
             }
         }
@@ -165,9 +165,9 @@ final class CardDecorateViewController: UIViewController {
         }) { _, error in
             DispatchQueue.main.async {
                 if error != nil {
-                    ToastManager.show("저장 실패", style: .error)
+                    ToastManager.show(L.toastSaveFailed, style: .error)
                 } else {
-                    ToastManager.show("저장 완료", style: .success)
+                    ToastManager.show(L.toastSaveCompleted, style: .success)
                 }
             }
         }
@@ -175,7 +175,7 @@ final class CardDecorateViewController: UIViewController {
 
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "확인", style: .default))
+        alert.addAction(UIAlertAction(title: L.buttonConfirm, style: .default))
         present(alert, animated: true)
     }
 }

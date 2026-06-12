@@ -51,8 +51,8 @@ final class MemoCardView: UIView {
 
     // MARK: - Placeholder
 
-    private let mainPlaceholder = "오늘의 한 줄"
-    private let subPlaceholder = "추가 메모"
+    private let mainPlaceholder = L.memoCardMainPlaceholder
+    private let subPlaceholder = L.memoCardSubPlaceholder
 
     // MARK: - Visibility State
 

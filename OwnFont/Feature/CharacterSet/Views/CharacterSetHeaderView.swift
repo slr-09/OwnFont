@@ -18,7 +18,7 @@ final class CharacterSetHeaderView: UIView {
 
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.text = "어떤 글자를 쓸까요?"
+        label.text = L.characterSetTitle
         label.font = .cardTitle
         label.textColor = .textTitle
         label.numberOfLines = 0
@@ -27,7 +27,7 @@ final class CharacterSetHeaderView: UIView {
 
     private let subtitleLabel: UILabel = {
         let label = UILabel()
-        label.text = "세트를 탭하면 바로 쓰기를 시작해요"
+        label.text = L.characterSetSubtitle
         label.font = .caption
         label.textColor = .textHint
         label.numberOfLines = 0

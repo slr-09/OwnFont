@@ -154,18 +154,18 @@ final class CharacterWritingViewController: UIViewController {
 
     private func showClearAllConfirmation() {
         let alert = UIAlertController(
-            title: "\(category.title) 전체 삭제",
-            message: "저장된 \(category.title) 글자가 모두 삭제됩니다.",
+            title: L.alertClearAllTitle(category.title),
+            message: L.alertClearAllMessage(category.title),
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: L.buttonDelete, style: .destructive) { [weak self] _ in
             guard let self else { return }
             GlyphStore.shared.deleteAllGlyphs(for: category.characters)
             completedIndices.removeAll()
             currentIndex = 0
             refreshUI()
         })
-        alert.addAction(UIAlertAction(title: "취소", style: .cancel))
+        alert.addAction(UIAlertAction(title: L.buttonCancel, style: .cancel))
         present(alert, animated: true)
     }
 

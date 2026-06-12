@@ -60,7 +60,7 @@ final class CardDecorateView: UIView {
         btn.layer.cornerRadius = 16
         var config = UIButton.Configuration.plain()
         config.attributedTitle = AttributedString(
-            "저장",
+            L.buttonSave,
             attributes: AttributeContainer([
                 .font: UIFont.body,
                 .foregroundColor: UIColor.white
@@ -101,7 +101,7 @@ final class CardDecorateView: UIView {
     }()
 
     private let segmentControl: UISegmentedControl = {
-        let sc = UISegmentedControl(items: ["텍스트", "색상"])
+        let sc = UISegmentedControl(items: [L.segmentText, L.segmentColor])
         sc.selectedSegmentIndex = 0
         sc.selectedSegmentTintColor = .primary
         let normalAttr: [NSAttributedString.Key: Any] = [
@@ -123,7 +123,7 @@ final class CardDecorateView: UIView {
 
     private let mainTextField: UITextField = {
         let tf = UITextField()
-        tf.placeholder = "메인 텍스트를 입력하세요"
+        tf.placeholder = L.cardDecorateMainPlaceholder
         tf.font = .cardHeader
         tf.textColor = .textPrimary
         tf.borderStyle = .none
@@ -137,7 +137,7 @@ final class CardDecorateView: UIView {
 
     private let subTextField: UITextField = {
         let tf = UITextField()
-        tf.placeholder = "서브 텍스트를 입력하세요"
+        tf.placeholder = L.cardDecorateSubPlaceholder
         tf.font = .body
         tf.textColor = .textSecondary
         tf.borderStyle = .none
@@ -309,7 +309,7 @@ final class CardDecorateView: UIView {
     }
 
     private func setupColorTab() {
-        let bgLabel = makeSectionLabel("배경색")
+        let bgLabel = makeSectionLabel(L.colorSectionBackground)
         let bgStack = makeColorButtonStack()
         CardDecorateView.bgColors.enumerated().forEach { index, item in
             let btn = makeCircleButton(color: item.bg, selected: index == 0)
@@ -319,7 +319,7 @@ final class CardDecorateView: UIView {
             colorButtons.append(btn)
         }
 
-        let textColorLabel = makeSectionLabel("글자색")
+        let textColorLabel = makeSectionLabel(L.colorSectionText)
         let textColorStack = makeColorButtonStack()
         CardDecorateView.textColors.enumerated().forEach { index, item in
             let btn = makeCircleButton(color: item.color, selected: index == 0)

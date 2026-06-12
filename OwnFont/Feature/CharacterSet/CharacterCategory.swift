@@ -13,10 +13,10 @@ enum CharacterCategory: CaseIterable {
 
     var title: String {
         switch self {
-        case .lowercaseLatin: return "영문 소문자"
-        case .uppercaseLatin: return "영문 대문자"
-        case .number:         return "숫자"
-        case .symbol:         return "특수문자"
+        case .lowercaseLatin: return L.categoryLowercaseLatin
+        case .uppercaseLatin: return L.categoryUppercaseLatin
+        case .number:         return L.categoryNumber
+        case .symbol:         return L.categorySymbol
         }
     }
 
@@ -39,7 +39,7 @@ enum CharacterCategory: CaseIterable {
     }
 
     func subtitle(completedCount: Int) -> String {
-        "\(rangeLabel) · \(completedCount) / \(totalCount)자 완료"
+        L.categorySubtitle(rangeLabel: rangeLabel, completedCount: completedCount, totalCount: totalCount)
     }
 
     var characters: [String] {
