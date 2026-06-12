@@ -14,7 +14,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		2319117F2FD810E600DFC90C /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OwnFont/Release.xcconfig; sourceTree = "<group>"; };
+		2319117F2FD810E600DFC90C /* OwnFont/Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OwnFont/Release.xcconfig; sourceTree = "<group>"; };
 		2344B8782F86B32E0096F844 /* OwnFont.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OwnFont.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -58,7 +58,7 @@
 		231913412FDAA04300DFC90C /* Recovered References */ = {
 			isa = PBXGroup;
 			children = (
-				2319117F2FD810E600DFC90C /* Release.xcconfig */,
+				2319117F2FD810E600DFC90C /* OwnFont/Release.xcconfig */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -210,7 +210,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = ZT27N85LQ5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = OwnFont/Info.plist;
@@ -224,7 +224,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.siro.OwnFont;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -243,12 +243,12 @@
 		};
 		2344B88D2F86B3310096F844 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 2319117F2FD810E600DFC90C /* Release.xcconfig */;
+			baseConfigurationReference = 2319117F2FD810E600DFC90C /* OwnFont/Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = ZT27N85LQ5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = OwnFont/Info.plist;
@@ -262,7 +262,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.siro.OwnFont;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -348,7 +348,7 @@
 		};
 		2344B88F2F86B3310096F844 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 2319117F2FD810E600DFC90C /* Release.xcconfig */;
+			baseConfigurationReference = 2319117F2FD810E600DFC90C /* OwnFont/Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
