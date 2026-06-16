@@ -59,6 +59,39 @@ final class CharacterWritingView: UIView {
         return btn
     }()
 
+    private let progressRow: UIStackView = {
+        let sv = UIStackView()
+        sv.axis = .horizontal
+        sv.alignment = .center
+        sv.spacing = 10
+        return sv
+    }()
+
+    private let progressTrack: UIView = {
+        let v = UIView()
+        v.backgroundColor = .borderLight
+        v.layer.cornerRadius = 3
+        v.clipsToBounds = true
+        return v
+    }()
+
+    private let progressFill: UIView = {
+        let v = UIView()
+        v.backgroundColor = .primary
+        v.layer.cornerRadius = 3
+        return v
+    }()
+
+    private let progressLabel: UILabel = {
+        let l = UILabel()
+        l.font = .caption
+        l.textColor = .textHint
+        l.textAlignment = .right
+        l.setContentHuggingPriority(.required, for: .horizontal)
+        l.setContentCompressionResistancePriority(.required, for: .horizontal)
+        return l
+    }()
+
     private let counterBadge: UIView = {
         let v = UIView()
         v.backgroundColor = .indigoLight
@@ -189,6 +222,15 @@ final class CharacterWritingView: UIView {
         addSubview(charScrollView)
         charScrollView.addSubview(charStackView)
 
+        progressTrack.addSubview(progressFill)
+        progressFill.snp.makeConstraints { make in
+            make.leading.top.bottom.equalToSuperview()
+            make.width.equalTo(progressTrack).multipliedBy(0)
+        }
+        progressRow.addArrangedSubview(progressTrack)
+        progressRow.addArrangedSubview(progressLabel)
+        addSubview(progressRow)
+
         currentCharRow.addArrangedSubview(currentCharHintLabel)
         currentCharRow.addArrangedSubview(currentCharBigLabel)
         addSubview(currentCharRow)
@@ -230,8 +272,16 @@ final class CharacterWritingView: UIView {
             make.edges.equalToSuperview().inset(UIEdgeInsets(top: 6, left: 12, bottom: 6, right: 12))
         }
 
+        progressRow.snp.makeConstraints { make in
+            make.top.equalTo(navBarView.snp.bottom).offset(10)
+            make.horizontalEdges.equalToSuperview().inset(20)
+        }
+        progressTrack.snp.makeConstraints { make in
+            make.height.equalTo(6)
+        }
+
         charGridLabel.snp.makeConstraints { make in
-            make.top.equalTo(navBarView.snp.bottom).offset(12)
+            make.top.equalTo(progressRow.snp.bottom).offset(12)
             make.leading.equalToSuperview().inset(20)
         }
         charScrollView.snp.makeConstraints { make in
@@ -380,6 +430,19 @@ final class CharacterWritingView: UIView {
 
     func updateCounter(current: Int, total: Int) {
         counterLabel.text = "\(current) / \(total)"
+    }
+
+    func updateProgress(completed: Int, total: Int) {
+        let ratio = total > 0 ? CGFloat(completed) / CGFloat(total) : 0
+        let percent = total > 0 ? Int(ratio * 100) : 0
+        progressLabel.text = L.writingProgress(percent: percent)
+        progressFill.snp.remakeConstraints { make in
+            make.leading.top.bottom.equalToSuperview()
+            make.width.equalTo(progressTrack).multipliedBy(ratio)
+        }
+        UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut) {
+            self.progressTrack.layoutIfNeeded()
+        }
     }
 
     func scrollToSlot(at index: Int) {

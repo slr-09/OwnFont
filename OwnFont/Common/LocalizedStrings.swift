@@ -49,6 +49,10 @@ static var tabBarCharacterIcon:   String {
     static var characterSetSubtitle:     String { s("characterSet.subtitle") }
     static var characterSetEditorButton: String { s("characterSet.editorButton") }
 
+    static func writingProgress(percent: Int) -> String {
+        LanguageManager.shared.string("writing.progress", percent)
+    }
+
     // MARK: - Text Editor
     static var textEditorTitle:       String { s("textEditor.title") }
     static var textEditorPlaceholder: String { s("textEditor.placeholder") }

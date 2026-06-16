@@ -176,6 +176,7 @@ final class CharacterWritingViewController: UIViewController {
         contentView.updateCurrentChar(chars[currentIndex])
         contentView.updateCounter(current: currentIndex + 1, total: category.totalCount)
         contentView.updateSlots(currentIndex: currentIndex, completedIndices: completedIndices)
+        contentView.updateProgress(completed: completedIndices.count, total: chars.count)
 
         let isAlreadyCompleted = completedIndices.contains(currentIndex)
         let hasMoreUncompleted = chars.indices.contains(where: { !completedIndices.contains($0) && $0 != currentIndex })

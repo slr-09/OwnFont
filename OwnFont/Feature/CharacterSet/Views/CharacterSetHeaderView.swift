@@ -2,8 +2,6 @@
 //  CharacterSetHeaderView.swift
 //  OwnFont
 //
-//  Created by Claude
-//
 
 import UIKit
 import SnapKit
