@@ -4,6 +4,7 @@
 //
 
 import Combine
+import GoogleMobileAds
 import UIKit
 import PencilKit
 
@@ -14,6 +15,7 @@ final class CharacterWritingViewController: UIViewController {
     private var currentIndex: Int = 0
     private var completedIndices: Set<Int> = []
     private var cancellables = Set<AnyCancellable>()
+    private var interstitial: InterstitialAd?
 
     private var contentView: CharacterWritingView {
         view as! CharacterWritingView
@@ -41,6 +43,9 @@ final class CharacterWritingViewController: UIViewController {
         contentView.canvasView.usePen()
         restoreCompletedIndices()
         refreshUI()
+        if completedIndices.count < category.characters.count {
+            loadInterstitialAd()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -73,7 +78,7 @@ final class CharacterWritingViewController: UIViewController {
                     advanceToNextChar()
                 case .done:
                     saveCurrentGlyph()
-                    navigationController?.popViewController(animated: true)
+                    showInterstitialOrPop()
                 case .save:
                     saveAndCycleToNext()
                 case .clearAll:
@@ -152,6 +157,25 @@ final class CharacterWritingViewController: UIViewController {
         GlyphStore.shared.saveDrawing(drawing, for: character)
     }
 
+    // MARK: - Interstitial Ad
+
+    private func loadInterstitialAd() {
+        guard let adUnitID = Bundle.main.object(forInfoDictionaryKey: "AdMobInterstitialID") as? String else { return }
+        InterstitialAd.load(with: adUnitID, request: Request()) { [weak self] ad, _ in
+            guard let self, let ad else { return }
+            self.interstitial = ad
+            ad.fullScreenContentDelegate = self
+        }
+    }
+
+    private func showInterstitialOrPop() {
+        if let ad = interstitial {
+            ad.present(from: self)
+        } else {
+            navigationController?.popViewController(animated: true)
+        }
+    }
+
     private func showClearAllConfirmation() {
         let alert = UIAlertController(
             title: L.alertClearAllTitle(category.title),
@@ -197,5 +221,17 @@ final class CharacterWritingViewController: UIViewController {
         } else {
             contentView.canvasView.clearDrawing()
         }
+    }
+}
+
+// MARK: - FullScreenContentDelegate
+
+extension CharacterWritingViewController: FullScreenContentDelegate {
+    func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
+        navigationController?.popViewController(animated: true)
+    }
+
+    func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
+        navigationController?.popViewController(animated: true)
     }
 }
