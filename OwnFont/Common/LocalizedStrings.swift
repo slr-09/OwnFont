@@ -111,6 +111,10 @@ static var tabBarCharacterIcon:   String {
     static var toastSaveCompleted: String { s("toast.saveCompleted") }
 
     // MARK: - Settings
-    static var settingsTitle:    String { s("settings.title") }
-    static var settingsLanguage: String { s("settings.language") }
+    static var settingsTitle:         String { s("settings.title") }
+    static var settingsSectionGeneral: String { s("settings.sectionGeneral") }
+    static var settingsSectionSupport: String { s("settings.sectionSupport") }
+    static var settingsLanguage:       String { s("settings.language") }
+    static var settingsReview:         String { s("settings.review") }
+    static var settingsContact:        String { s("settings.contact") }
 }
