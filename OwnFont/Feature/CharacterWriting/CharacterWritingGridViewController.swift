@@ -4,6 +4,7 @@
 //
 
 import Combine
+import GoogleMobileAds
 import UIKit
 import PencilKit
 
@@ -16,6 +17,7 @@ final class CharacterWritingGridViewController: UIViewController,
     private var completedIndices: Set<Int> = []
     private var isPen: Bool = true
     private var cancellables = Set<AnyCancellable>()
+    private var interstitial: InterstitialAd?
 
     private var contentView: CharacterWritingGridView {
         view as! CharacterWritingGridView
@@ -42,7 +44,10 @@ final class CharacterWritingGridViewController: UIViewController,
         contentView.collectionView.delegate = self
         bindCallbacks()
         restoreCompletedIndices()
-        refreshCounter()
+        refreshProgress()
+        if completedIndices.count < category.characters.count {
+            loadInterstitialAd()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -67,7 +72,7 @@ final class CharacterWritingGridViewController: UIViewController,
                 guard let self else { return }
                 switch action {
                 case .back:
-                    navigationController?.popViewController(animated: true)
+                    showInterstitialOrPop()
                 case .clearAll:
                     showClearAllConfirmation()
                 case .penSelected:
@@ -129,7 +134,7 @@ final class CharacterWritingGridViewController: UIViewController,
         GlyphStore.shared.deleteAllGlyphs(for: [character])
         if completedIndices.remove(idx) != nil {
             cell.setCompleted(false)
-            refreshCounter()
+            refreshProgress()
         }
     }
 
@@ -145,7 +150,7 @@ final class CharacterWritingGridViewController: UIViewController,
                     .cellForItem(at: IndexPath(item: index, section: 0)) as? CharacterWritingGridCell {
                     cell.setCompleted(false)
                 }
-                refreshCounter()
+                refreshProgress()
             }
             return
         }
@@ -173,12 +178,34 @@ final class CharacterWritingGridViewController: UIViewController,
                 .cellForItem(at: IndexPath(item: index, section: 0)) as? CharacterWritingGridCell {
                 cell.setCompleted(true)
             }
-            refreshCounter()
+            refreshProgress()
         }
     }
 
-    private func refreshCounter() {
+    // MARK: - Interstitial Ad
+
+    private func loadInterstitialAd() {
+        guard let adUnitID = Bundle.main.object(forInfoDictionaryKey: "AdMobInterstitialID") as? String else { return }
+        InterstitialAd.load(with: adUnitID, request: Request()) { [weak self] ad, _ in
+            guard let self, let ad else { return }
+            self.interstitial = ad
+            ad.fullScreenContentDelegate = self
+        }
+    }
+
+    private func showInterstitialOrPop() {
+        let isAllCompleted = completedIndices.count == category.characters.count
+        if isAllCompleted, let ad = interstitial {
+            interstitial = nil
+            ad.present(from: self)
+        } else {
+            navigationController?.popViewController(animated: true)
+        }
+    }
+
+    private func refreshProgress() {
         contentView.updateCounter(current: completedIndices.count, total: category.totalCount)
+        contentView.updateProgress(completed: completedIndices.count, total: category.characters.count)
     }
 
     private func showClearAllConfirmation() {
@@ -196,13 +223,14 @@ final class CharacterWritingGridViewController: UIViewController,
                 c.canvasContainer.clearDrawing()
                 c.setCompleted(false)
             }
-            refreshCounter()
+            refreshProgress()
         })
         alert.addAction(UIAlertAction(title: L.buttonCancel, style: .cancel))
         present(alert, animated: true)
     }
 
     // MARK: - UICollectionViewDataSource
+
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         category.characters.count
     }
@@ -263,5 +291,17 @@ final class CharacterWritingGridViewController: UIViewController,
         let usedWidth = columns * side + (columns - 1) * spacing
         let sideInset = max(minInset, floor((width - usedWidth) / 2))
         return UIEdgeInsets(top: 12, left: sideInset, bottom: 12, right: sideInset)
+    }
+}
+
+// MARK: - FullScreenContentDelegate
+
+extension CharacterWritingGridViewController: FullScreenContentDelegate {
+    func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
+        navigationController?.popViewController(animated: true)
+    }
+
+    func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
+        navigationController?.popViewController(animated: true)
     }
 }

@@ -69,6 +69,9 @@ final class CharacterWritingGridView: UIView {
         return l
     }()
 
+    // MARK: - Progress
+    private let progressView = CategoryProgressView()
+
     // MARK: - Collection View
     let collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
@@ -114,6 +117,7 @@ final class CharacterWritingGridView: UIView {
         navBarView.addSubview(counterBadge)
         counterBadge.addSubview(counterLabel)
 
+        addSubview(progressView)
         addSubview(collectionView)
         addSubview(toolBarView)
 
@@ -161,8 +165,13 @@ final class CharacterWritingGridView: UIView {
             btn.snp.makeConstraints { make in make.size.equalTo(48) }
         }
 
+        progressView.snp.makeConstraints { make in
+            make.top.equalTo(navBarView.snp.bottom).offset(10)
+            make.horizontalEdges.equalToSuperview().inset(20)
+        }
+
         collectionView.snp.makeConstraints { make in
-            make.top.equalTo(navBarView.snp.bottom)
+            make.top.equalTo(progressView.snp.bottom).offset(4)
             make.horizontalEdges.equalToSuperview()
             make.bottom.equalTo(toolBarView.snp.top)
         }
@@ -187,6 +196,10 @@ final class CharacterWritingGridView: UIView {
     // MARK: - Public Interface
     func updateCounter(current: Int, total: Int) {
         counterLabel.text = "\(current) / \(total)"
+    }
+
+    func updateProgress(completed: Int, total: Int) {
+        progressView.update(completed: completed, total: total)
     }
 
     func setActiveTool(isPen: Bool) {
