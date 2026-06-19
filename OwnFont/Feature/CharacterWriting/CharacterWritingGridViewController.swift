@@ -185,6 +185,7 @@ final class CharacterWritingGridViewController: UIViewController,
     // MARK: - Interstitial Ad
 
     private func loadInterstitialAd() {
+        guard interstitial == nil else { return }
         guard let adUnitID = Bundle.main.object(forInfoDictionaryKey: "AdMobInterstitialID") as? String else { return }
         InterstitialAd.load(with: adUnitID, request: Request()) { [weak self] ad, _ in
             guard let self, let ad else { return }
@@ -194,8 +195,7 @@ final class CharacterWritingGridViewController: UIViewController,
     }
 
     private func showInterstitialOrPop() {
-        let isAllCompleted = completedIndices.count == category.characters.count
-        if isAllCompleted, let ad = interstitial {
+        if let ad = interstitial {
             interstitial = nil
             ad.present(from: self)
         } else {
@@ -224,6 +224,7 @@ final class CharacterWritingGridViewController: UIViewController,
                 c.setCompleted(false)
             }
             refreshProgress()
+            loadInterstitialAd()
         })
         alert.addAction(UIAlertAction(title: L.buttonCancel, style: .cancel))
         present(alert, animated: true)

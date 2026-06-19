@@ -160,6 +160,7 @@ final class CharacterWritingViewController: UIViewController {
     // MARK: - Interstitial Ad
 
     private func loadInterstitialAd() {
+        guard interstitial == nil else { return }
         guard let adUnitID = Bundle.main.object(forInfoDictionaryKey: "AdMobInterstitialID") as? String else { return }
         InterstitialAd.load(with: adUnitID, request: Request()) { [weak self] ad, _ in
             guard let self, let ad else { return }
@@ -170,6 +171,7 @@ final class CharacterWritingViewController: UIViewController {
 
     private func showInterstitialOrPop() {
         if let ad = interstitial {
+            interstitial = nil
             ad.present(from: self)
         } else {
             navigationController?.popViewController(animated: true)
@@ -188,6 +190,7 @@ final class CharacterWritingViewController: UIViewController {
             completedIndices.removeAll()
             currentIndex = 0
             refreshUI()
+            loadInterstitialAd()
         })
         alert.addAction(UIAlertAction(title: L.buttonCancel, style: .cancel))
         present(alert, animated: true)
