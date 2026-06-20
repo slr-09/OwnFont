@@ -138,12 +138,13 @@ final class CardHomeViewController: UIViewController {
                 gesture.view?.transform = CGAffineTransform(scaleX: 0.97, y: 0.97)
             }
         case .ended:
+            // 제스처가 리셋된 뒤(완료 콜백)에는 location(in:) 값이 불안정하므로
+            // .ended 시점에 카드 내부 여부를 동기적으로 계산해 둔다. (iPad 전환 누락 원인)
+            let isInsideCard = gesture.view.map { $0.bounds.contains(gesture.location(in: $0)) } ?? false
             UIView.animate(withDuration: 0.15) {
                 gesture.view?.transform = .identity
             } completion: { _ in
-                guard let card = gesture.view,
-                      card.bounds.contains(gesture.location(in: card)) else { return }
-                gesture.onTap?()
+                if isInsideCard { gesture.onTap?() }
             }
         case .cancelled, .failed:
             UIView.animate(withDuration: 0.15) {
