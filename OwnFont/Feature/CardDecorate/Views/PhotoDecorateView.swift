@@ -31,6 +31,7 @@ final class PhotoDecorateView: UIView {
     private weak var overlayTextView: UITextView?
     private var currentTextColor: UIColor = .white
     private var currentFontSize: CGFloat = 36
+    private var colorChips: [UIButton] = []
     private var isTrashHighlighted: Bool = false
     private var cancellables = Set<AnyCancellable>()
 
@@ -595,18 +596,34 @@ final class PhotoDecorateView: UIView {
         stack.axis = .horizontal
         stack.spacing = 10
         stack.alignment = .center
+        colorChips = []
         for (i, color) in Self.stickerColors.enumerated() {
             let chip = UIButton(type: .custom)
             chip.backgroundColor = color
             chip.layer.cornerRadius = 13
-            chip.layer.borderWidth = (color == .white || color == .black) ? 1 : 0
-            chip.layer.borderColor = UIColor.gray.cgColor
             chip.tag = i
             chip.addTarget(self, action: #selector(colorChipTapped(_:)), for: .touchUpInside)
             stack.addArrangedSubview(chip)
             chip.snp.makeConstraints { $0.size.equalTo(26) }
+            colorChips.append(chip)
         }
+        updateChipSelection(Self.stickerColors.firstIndex(of: currentTextColor) ?? 0)
         return stack
+    }
+
+    /// 선택된 색상 칩만 강조 테두리를 표시한다.
+    private func updateChipSelection(_ index: Int) {
+        for (i, chip) in colorChips.enumerated() {
+            let color = Self.stickerColors[i]
+            if i == index {
+                chip.layer.borderWidth = 2.5
+                // 흰색 칩 위에서는 흰 링이 보이지 않으므로 회색 링으로 대체한다.
+                chip.layer.borderColor = (color == .white) ? UIColor.gray.cgColor : UIColor.white.cgColor
+            } else {
+                chip.layer.borderWidth = (color == .white || color == .black) ? 1 : 0
+                chip.layer.borderColor = UIColor.gray.cgColor
+            }
+        }
     }
 
     private func makeSizeSegment() -> UISegmentedControl {
@@ -624,6 +641,7 @@ final class PhotoDecorateView: UIView {
 
     @objc private func colorChipTapped(_ sender: UIButton) {
         currentTextColor = Self.stickerColors[sender.tag]
+        updateChipSelection(sender.tag)
         overlayTextView?.textColor = currentTextColor
         applyAttributeToOverlayText(.foregroundColor, value: currentTextColor)
     }
