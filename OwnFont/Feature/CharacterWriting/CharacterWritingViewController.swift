@@ -17,6 +17,10 @@ final class CharacterWritingViewController: UIViewController {
     private var cancellables = Set<AnyCancellable>()
     private var interstitial: InterstitialAd?
 
+    /// 이번 방문에서 새로 쓴(저장한) 글자 인덱스. 전면 광고 노출 기준에 사용한다.
+    private var sessionWrittenIndices: Set<Int> = []
+    private static let adMinWriteCount = 5
+
     private var contentView: CharacterWritingView {
         view as! CharacterWritingView
     }
@@ -155,6 +159,7 @@ final class CharacterWritingViewController: UIViewController {
             GlyphData(character: character, normalizedPath: normalizedPath, createdAt: Date())
         )
         GlyphStore.shared.saveDrawing(drawing, for: character)
+        sessionWrittenIndices.insert(currentIndex)
     }
 
     // MARK: - Interstitial Ad
@@ -170,7 +175,7 @@ final class CharacterWritingViewController: UIViewController {
     }
 
     private func showInterstitialOrPop() {
-        if let ad = interstitial {
+        if sessionWrittenIndices.count >= Self.adMinWriteCount, let ad = interstitial {
             interstitial = nil
             ad.present(from: self)
         } else {
@@ -188,6 +193,7 @@ final class CharacterWritingViewController: UIViewController {
             guard let self else { return }
             GlyphStore.shared.deleteAllGlyphs(for: category.characters)
             completedIndices.removeAll()
+            sessionWrittenIndices.removeAll()
             currentIndex = 0
             refreshUI()
             loadInterstitialAd()

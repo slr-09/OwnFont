@@ -19,6 +19,10 @@ final class CharacterWritingGridViewController: UIViewController,
     private var cancellables = Set<AnyCancellable>()
     private var interstitial: InterstitialAd?
 
+    /// 이번 방문에서 새로 쓴(저장한) 글자 인덱스. 전면 광고 노출 기준에 사용한다.
+    private var sessionWrittenIndices: Set<Int> = []
+    private static let adMinWriteCount = 5
+
     private var contentView: CharacterWritingGridView {
         view as! CharacterWritingGridView
     }
@@ -144,6 +148,7 @@ final class CharacterWritingGridViewController: UIViewController,
         let character = chars[index]
 
         if drawing.strokes.isEmpty {
+            sessionWrittenIndices.remove(index)
             if completedIndices.remove(index) != nil {
                 GlyphStore.shared.deleteAllGlyphs(for: [character])
                 if let cell = contentView.collectionView
@@ -172,6 +177,7 @@ final class CharacterWritingGridViewController: UIViewController,
             GlyphData(character: character, normalizedPath: normalizedPath, createdAt: Date())
         )
         GlyphStore.shared.saveDrawing(drawing, for: character)
+        sessionWrittenIndices.insert(index)
 
         if completedIndices.insert(index).inserted {
             if let cell = contentView.collectionView
@@ -195,7 +201,7 @@ final class CharacterWritingGridViewController: UIViewController,
     }
 
     private func showInterstitialOrPop() {
-        if let ad = interstitial {
+        if sessionWrittenIndices.count >= Self.adMinWriteCount, let ad = interstitial {
             interstitial = nil
             ad.present(from: self)
         } else {
@@ -218,6 +224,7 @@ final class CharacterWritingGridViewController: UIViewController,
             guard let self else { return }
             GlyphStore.shared.deleteAllGlyphs(for: category.characters)
             completedIndices.removeAll()
+            sessionWrittenIndices.removeAll()
             contentView.collectionView.visibleCells.forEach { cell in
                 guard let c = cell as? CharacterWritingGridCell else { return }
                 c.canvasContainer.clearDrawing()
