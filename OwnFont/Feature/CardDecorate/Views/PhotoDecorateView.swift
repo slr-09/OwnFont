@@ -171,7 +171,23 @@ final class PhotoDecorateView: UIView {
         let scaledSize = CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
         let x = (viewSize.width - scaledSize.width) / 2
         let y = (viewSize.height - scaledSize.height) / 2
+
+        let oldSize = stickerCanvas.bounds.size
         stickerCanvas.frame = CGRect(x: x, y: y, width: scaledSize.width, height: scaledSize.height)
+        repositionStickers(from: oldSize, to: scaledSize)
+    }
+
+    /// 캔버스 크기가 바뀌면(예: 회전) 스티커가 원래 위치 비율을 유지하도록 center 를 보정한다.
+    private func repositionStickers(from oldSize: CGSize, to newSize: CGSize) {
+        guard oldSize.width > 0, oldSize.height > 0,
+              newSize.width > 0, newSize.height > 0,
+              oldSize != newSize else { return }
+        let scaleX = newSize.width / oldSize.width
+        let scaleY = newSize.height / oldSize.height
+        for case let sticker as TextStickerView in stickerCanvas.subviews {
+            sticker.center = CGPoint(x: sticker.center.x * scaleX,
+                                     y: sticker.center.y * scaleY)
+        }
     }
 
     private func setupLayout() {
@@ -397,6 +413,7 @@ final class PhotoDecorateView: UIView {
 
     private func buildOverlayContainer() -> UIView {
         let overlay = UIView(frame: bounds)
+        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         overlay.backgroundColor = UIColor.black.withAlphaComponent(0.75)
         overlayView = overlay
         return overlay
