@@ -26,6 +26,8 @@ final class PhotoDecorateView: UIView {
 
     private var lastPhotoImageBounds: CGRect = .zero
     private var editingSticker: TextStickerView?
+    private weak var overlayView: UIView?
+    private weak var overlayControlsBar: UIView?
     private weak var overlayTextView: UITextView?
     private var currentTextColor: UIColor = .white
     private var currentFontSize: CGFloat = 36
@@ -36,8 +38,6 @@ final class PhotoDecorateView: UIView {
         .white, .black, .systemPink, .systemOrange, .systemGreen, .systemYellow, .systemBlue, .systemPurple
     ]
     private static let fontSizes: [CGFloat] = [24, 36, 52]
-    private static let overlayTag = 9999
-    private static let controlsBarTag = 9998
 
     // MARK: - Nav Bar
 
@@ -398,7 +398,7 @@ final class PhotoDecorateView: UIView {
     private func buildOverlayContainer() -> UIView {
         let overlay = UIView(frame: bounds)
         overlay.backgroundColor = UIColor.black.withAlphaComponent(0.75)
-        overlay.tag = Self.overlayTag
+        overlayView = overlay
         return overlay
     }
 
@@ -421,7 +421,7 @@ final class PhotoDecorateView: UIView {
 
     private func addOverlayControlsBar(to overlay: UIView) -> UIView {
         let controlsBar = makeControlsBar()
-        controlsBar.tag = Self.controlsBarTag
+        overlayControlsBar = controlsBar
         overlay.addSubview(controlsBar)
         controlsBar.snp.makeConstraints { make in
             make.horizontalEdges.equalToSuperview()
@@ -483,7 +483,7 @@ final class PhotoDecorateView: UIView {
     }
 
     private func animateOverlayOut(target: TextStickerView?) {
-        guard let overlay = viewWithTag(Self.overlayTag) else { return }
+        guard let overlay = overlayView else { return }
         overlay.layoutIfNeeded()
 
         if let target, let tv = overlayTextView {
@@ -607,23 +607,26 @@ final class PhotoDecorateView: UIView {
 
     @objc private func colorChipTapped(_ sender: UIButton) {
         currentTextColor = Self.stickerColors[sender.tag]
-        guard let tv = overlayTextView else { return }
-        tv.textColor = currentTextColor
-        if let text = tv.text, !text.isEmpty {
-            tv.textStorage.addAttribute(.foregroundColor, value: currentTextColor,
-                                        range: NSRange(location: 0, length: (text as NSString).length))
-        }
+        overlayTextView?.textColor = currentTextColor
+        applyAttributeToOverlayText(.foregroundColor, value: currentTextColor)
     }
 
     @objc private func sizeControlChanged(_ sender: UISegmentedControl) {
         currentFontSize = Self.fontSizes[sender.selectedSegmentIndex]
         guard let tv = overlayTextView else { return }
         tv.font = .custom(size: currentFontSize)
-        if let text = tv.text, !text.isEmpty {
-            tv.textStorage.addAttribute(.font, value: UIFont.custom(size: currentFontSize),
-                                        range: NSRange(location: 0, length: (text as NSString).length))
+        if applyAttributeToOverlayText(.font, value: UIFont.custom(size: currentFontSize)) {
             GlyphKerning.apply(to: tv.textStorage)
         }
+    }
+
+    /// 오버레이 텍스트뷰의 전체 범위에 속성을 적용한다. 텍스트가 비어 있으면 false 를 반환한다.
+    @discardableResult
+    private func applyAttributeToOverlayText(_ key: NSAttributedString.Key, value: Any) -> Bool {
+        guard let tv = overlayTextView, let text = tv.text, !text.isEmpty else { return false }
+        tv.textStorage.addAttribute(key, value: value,
+                                    range: NSRange(location: 0, length: (text as NSString).length))
+        return true
     }
 
     // MARK: - Keyboard
@@ -640,8 +643,8 @@ final class PhotoDecorateView: UIView {
     private func handleKeyboardChange(_ notification: Notification) {
         guard let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
               let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
-              let overlay = viewWithTag(Self.overlayTag),
-              let controlsBar = overlay.viewWithTag(Self.controlsBarTag) else { return }
+              let overlay = overlayView,
+              let controlsBar = overlayControlsBar else { return }
 
         let inset = notification.name == UIResponder.keyboardWillShowNotification ? keyboardFrame.height : 0
         UIView.animate(withDuration: duration) {
