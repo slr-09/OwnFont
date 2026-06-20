@@ -256,7 +256,6 @@ final class PhotoDecorateView: UIView {
     @objc private func handleSave()    { actionPublisher.send(.save) }
     @objc private func handleShare()   { actionPublisher.send(.share) }
     @objc private func handleAddText() {
-        actionPublisher.send(.textStickerAdded)
         showTextEditOverlay(editing: nil)
     }
 
@@ -494,6 +493,7 @@ final class PhotoDecorateView: UIView {
             sticker.isHidden = true
             bindStickerCallbacks(sticker)
             target = sticker
+            actionPublisher.send(.textStickerAdded)
         }
 
         animateOverlayOut(target: target)
