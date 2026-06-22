@@ -4,6 +4,7 @@
 //
 
 import FirebaseAnalytics
+import FirebaseCrashlytics
 
 enum AnalyticsEvent {
     enum DecorateSource: String {
@@ -48,5 +49,33 @@ final class AnalyticsManager {
 
     func log(_ event: AnalyticsEvent) {
         Analytics.logEvent(event.name, parameters: event.parameters)
+    }
+
+    func setCrashContext(screen: String, category: CharacterCategory? = nil) {
+        let crashlytics = Crashlytics.crashlytics()
+        crashlytics.setCustomValue(screen, forKey: "screen")
+        if let category {
+            crashlytics.setCustomValue(category.debugName, forKey: "character_category")
+        }
+    }
+
+    func setWritingCrashContext(
+        screen: String,
+        category: CharacterCategory,
+        index: Int?,
+        character: String?,
+        action: String,
+        strokeCount: Int? = nil
+    ) {
+        let crashlytics = Crashlytics.crashlytics()
+        crashlytics.setCustomValue(screen, forKey: "screen")
+        crashlytics.setCustomValue(category.debugName, forKey: "character_category")
+        crashlytics.setCustomValue(index ?? -1, forKey: "character_index")
+        crashlytics.setCustomValue(character ?? "", forKey: "character")
+        crashlytics.setCustomValue(action, forKey: "last_action")
+        if let strokeCount {
+            crashlytics.setCustomValue(strokeCount, forKey: "stroke_count")
+        }
+        crashlytics.log("[\(screen)] \(action) category=\(category.debugName) index=\(index ?? -1) character=\(character ?? "")")
     }
 }

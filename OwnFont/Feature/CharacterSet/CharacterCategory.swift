@@ -13,6 +13,17 @@ enum CharacterCategory: CaseIterable {
     case hangulChoseong
     case hangulJungseong
 
+    var debugName: String {
+        switch self {
+        case .lowercaseLatin:   return "lowercase_latin"
+        case .uppercaseLatin:   return "uppercase_latin"
+        case .number:           return "number"
+        case .symbol:           return "symbol"
+        case .hangulChoseong:   return "hangul_choseong"
+        case .hangulJungseong:  return "hangul_jungseong"
+        }
+    }
+
     var title: String {
         switch self {
         case .lowercaseLatin:   return L.categoryLowercaseLatin

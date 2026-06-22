@@ -44,6 +44,7 @@ final class CharacterWritingGridViewController: UIViewController,
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        updateCrashContext(action: "view_did_load")
         contentView.collectionView.dataSource = self
         contentView.collectionView.delegate = self
         bindCallbacks()
@@ -76,20 +77,26 @@ final class CharacterWritingGridViewController: UIViewController,
                 guard let self else { return }
                 switch action {
                 case .back:
+                    updateCrashContext(action: "tap_back")
                     showInterstitialOrPop()
                 case .clearAll:
+                    updateCrashContext(action: "tap_clear_all")
                     showClearAllConfirmation()
                 case .penSelected:
+                    updateCrashContext(action: "select_pen")
                     isPen = true
                     contentView.setActiveTool(isPen: true)
                     applyToolToFocusedCell()
                 case .eraserSelected:
+                    updateCrashContext(action: "select_eraser")
                     isPen = false
                     contentView.setActiveTool(isPen: false)
                     applyToolToFocusedCell()
                 case .undo:
+                    updateCrashContext(action: "tap_undo")
                     focusedCell()?.canvasContainer.undo()
                 case .clear:
+                    updateCrashContext(action: "tap_clear")
                     clearFocusedCell()
                 }
             }
@@ -118,6 +125,7 @@ final class CharacterWritingGridViewController: UIViewController,
 
     private func setFocused(at index: Int) {
         if focusedIndex == index { return }
+        updateCrashContext(action: "focus_cell_\(index)", index: index)
         if let prev = focusedIndex,
            let prevCell = contentView.collectionView
                .cellForItem(at: IndexPath(item: prev, section: 0)) as? CharacterWritingGridCell {
@@ -133,6 +141,7 @@ final class CharacterWritingGridViewController: UIViewController,
 
     private func clearFocusedCell() {
         guard let idx = focusedIndex, let cell = focusedCell() else { return }
+        updateCrashContext(action: "clear_focused_cell", index: idx, strokeCount: cell.canvasContainer.drawing.strokes.count)
         cell.canvasContainer.clearDrawing()
         let character = category.characters[idx]
         GlyphStore.shared.deleteAllGlyphs(for: [character])
@@ -143,6 +152,7 @@ final class CharacterWritingGridViewController: UIViewController,
     }
 
     private func saveGlyph(at index: Int, drawing: PKDrawing) {
+        updateCrashContext(action: "save_glyph_start", index: index, strokeCount: drawing.strokes.count)
         let chars = category.characters
         guard index < chars.count else { return }
         let character = chars[index]
@@ -157,10 +167,14 @@ final class CharacterWritingGridViewController: UIViewController,
                 }
                 refreshProgress()
             }
+            updateCrashContext(action: "save_glyph_empty", index: index, strokeCount: 0)
             return
         }
 
-        if let saved = GlyphStore.shared.loadDrawing(for: character), saved == drawing { return }
+        if let saved = GlyphStore.shared.loadDrawing(for: character), saved == drawing {
+            updateCrashContext(action: "save_glyph_skip_unchanged", index: index, strokeCount: drawing.strokes.count)
+            return
+        }
 
         let canvasSize: CGSize = {
             if let cell = contentView.collectionView
@@ -169,6 +183,10 @@ final class CharacterWritingGridViewController: UIViewController,
             }
             return .zero
         }()
+        guard canvasSize.width > 0, canvasSize.height > 0 else {
+            updateCrashContext(action: "save_glyph_skip_invalid_canvas", index: index, strokeCount: drawing.strokes.count)
+            return
+        }
 
         let rawPath = DrawingPathExtractor.extract(from: drawing)
         let normalizedPath = GlyphNormalizer.normalize(rawPath, canvasSize: canvasSize)
@@ -186,6 +204,7 @@ final class CharacterWritingGridViewController: UIViewController,
             }
             refreshProgress()
         }
+        updateCrashContext(action: "save_glyph_finish", index: index, strokeCount: drawing.strokes.count)
     }
 
     // MARK: - Interstitial Ad
@@ -202,9 +221,11 @@ final class CharacterWritingGridViewController: UIViewController,
 
     private func showInterstitialOrPop() {
         if sessionWrittenIndices.count >= Self.adMinWriteCount, let ad = interstitial {
+            updateCrashContext(action: "present_interstitial")
             interstitial = nil
             ad.present(from: self)
         } else {
+            updateCrashContext(action: "pop_without_interstitial")
             navigationController?.popViewController(animated: true)
         }
     }
@@ -225,6 +246,7 @@ final class CharacterWritingGridViewController: UIViewController,
             GlyphStore.shared.deleteAllGlyphs(for: category.characters)
             completedIndices.removeAll()
             sessionWrittenIndices.removeAll()
+            updateCrashContext(action: "clear_all_confirmed")
             contentView.collectionView.visibleCells.forEach { cell in
                 guard let c = cell as? CharacterWritingGridCell else { return }
                 c.canvasContainer.clearDrawing()
@@ -300,16 +322,37 @@ final class CharacterWritingGridViewController: UIViewController,
         let sideInset = max(minInset, floor((width - usedWidth) / 2))
         return UIEdgeInsets(top: 12, left: sideInset, bottom: 12, right: sideInset)
     }
+
+    private func updateCrashContext(action: String, index: Int? = nil, strokeCount: Int? = nil) {
+        let chars = category.characters
+        let targetIndex = index ?? focusedIndex
+        let character: String?
+        if let targetIndex, chars.indices.contains(targetIndex) {
+            character = chars[targetIndex]
+        } else {
+            character = nil
+        }
+        AnalyticsManager.shared.setWritingCrashContext(
+            screen: "character_writing_grid",
+            category: category,
+            index: targetIndex,
+            character: character,
+            action: action,
+            strokeCount: strokeCount
+        )
+    }
 }
 
 // MARK: - FullScreenContentDelegate
 
 extension CharacterWritingGridViewController: FullScreenContentDelegate {
     func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
+        updateCrashContext(action: "interstitial_dismissed")
         navigationController?.popViewController(animated: true)
     }
 
     func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
+        updateCrashContext(action: "interstitial_failed_to_present")
         navigationController?.popViewController(animated: true)
     }
 }

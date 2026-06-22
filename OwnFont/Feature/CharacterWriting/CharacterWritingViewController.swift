@@ -42,6 +42,7 @@ final class CharacterWritingViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        updateCrashContext(action: "view_did_load")
         bindCallbacks()
         contentView.setupCharSlots(characters: category.characters)
         contentView.canvasView.usePen()
@@ -67,27 +68,37 @@ final class CharacterWritingViewController: UIViewController {
                 guard let self else { return }
                 switch action {
                 case .back:
+                    updateCrashContext(action: "tap_back")
                     navigationController?.popViewController(animated: true)
                 case .penSelected:
+                    updateCrashContext(action: "select_pen")
                     contentView.setActiveTool(isPen: true)
                     contentView.canvasView.usePen()
                 case .eraserSelected:
+                    updateCrashContext(action: "select_eraser")
                     contentView.setActiveTool(isPen: false)
                     contentView.canvasView.useEraser()
                 case .undo:
+                    updateCrashContext(action: "tap_undo")
                     contentView.canvasView.undo()
                 case .clear:
+                    updateCrashContext(action: "tap_clear")
                     contentView.canvasView.clearDrawing()
                 case .next:
+                    updateCrashContext(action: "tap_next")
                     advanceToNextChar()
                 case .done:
+                    updateCrashContext(action: "tap_done")
                     saveCurrentGlyph()
                     showInterstitialOrPop()
                 case .save:
+                    updateCrashContext(action: "tap_save")
                     saveAndCycleToNext()
                 case .clearAll:
+                    updateCrashContext(action: "tap_clear_all")
                     showClearAllConfirmation()
                 case .slotTapped(let index):
+                    updateCrashContext(action: "tap_slot_\(index)")
                     navigateTo(index: index)
                 }
             }
@@ -145,12 +156,23 @@ final class CharacterWritingViewController: UIViewController {
     /// CGPath + PKDrawing 모두 저장 (변경 없으면 스킵)
     private func saveCurrentGlyph() {
         let drawing = contentView.canvasView.drawing
-        guard !drawing.strokes.isEmpty else { return }
+        updateCrashContext(action: "save_current_glyph_start", strokeCount: drawing.strokes.count)
+        guard !drawing.strokes.isEmpty else {
+            updateCrashContext(action: "save_current_glyph_skip_empty", strokeCount: 0)
+            return
+        }
 
         let character = category.characters[currentIndex]
-        if let saved = GlyphStore.shared.loadDrawing(for: character), saved == drawing { return }
+        if let saved = GlyphStore.shared.loadDrawing(for: character), saved == drawing {
+            updateCrashContext(action: "save_current_glyph_skip_unchanged", strokeCount: drawing.strokes.count)
+            return
+        }
 
         let canvasSize = contentView.canvasView.bounds.size
+        guard canvasSize.width > 0, canvasSize.height > 0 else {
+            updateCrashContext(action: "save_current_glyph_skip_invalid_canvas", strokeCount: drawing.strokes.count)
+            return
+        }
 
         let rawPath = DrawingPathExtractor.extract(from: drawing)
         let normalizedPath = GlyphNormalizer.normalize(rawPath, canvasSize: canvasSize)
@@ -160,6 +182,7 @@ final class CharacterWritingViewController: UIViewController {
         )
         GlyphStore.shared.saveDrawing(drawing, for: character)
         sessionWrittenIndices.insert(currentIndex)
+        updateCrashContext(action: "save_current_glyph_finish", strokeCount: drawing.strokes.count)
     }
 
     // MARK: - Interstitial Ad
@@ -176,9 +199,11 @@ final class CharacterWritingViewController: UIViewController {
 
     private func showInterstitialOrPop() {
         if sessionWrittenIndices.count >= Self.adMinWriteCount, let ad = interstitial {
+            updateCrashContext(action: "present_interstitial")
             interstitial = nil
             ad.present(from: self)
         } else {
+            updateCrashContext(action: "pop_without_interstitial")
             navigationController?.popViewController(animated: true)
         }
     }
@@ -195,6 +220,7 @@ final class CharacterWritingViewController: UIViewController {
             completedIndices.removeAll()
             sessionWrittenIndices.removeAll()
             currentIndex = 0
+            updateCrashContext(action: "clear_all_confirmed")
             refreshUI()
             loadInterstitialAd()
         })
@@ -205,6 +231,7 @@ final class CharacterWritingViewController: UIViewController {
     private func refreshUI() {
         let chars = category.characters
         guard currentIndex < chars.count else { return }
+        updateCrashContext(action: "refresh_ui")
 
         contentView.updateCurrentChar(chars[currentIndex])
         contentView.updateCounter(current: currentIndex + 1, total: category.totalCount)
@@ -231,16 +258,31 @@ final class CharacterWritingViewController: UIViewController {
             contentView.canvasView.clearDrawing()
         }
     }
+
+    private func updateCrashContext(action: String, strokeCount: Int? = nil) {
+        let chars = category.characters
+        let character = chars.indices.contains(currentIndex) ? chars[currentIndex] : nil
+        AnalyticsManager.shared.setWritingCrashContext(
+            screen: "character_writing",
+            category: category,
+            index: currentIndex,
+            character: character,
+            action: action,
+            strokeCount: strokeCount
+        )
+    }
 }
 
 // MARK: - FullScreenContentDelegate
 
 extension CharacterWritingViewController: FullScreenContentDelegate {
     func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
+        updateCrashContext(action: "interstitial_dismissed")
         navigationController?.popViewController(animated: true)
     }
 
     func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
+        updateCrashContext(action: "interstitial_failed_to_present")
         navigationController?.popViewController(animated: true)
     }
 }
