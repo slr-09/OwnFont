@@ -171,6 +171,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		2399AAD42F8D50A000A562D2 /* Crashlytics dSYM Upload */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
