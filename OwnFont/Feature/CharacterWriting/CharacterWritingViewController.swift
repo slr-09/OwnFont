@@ -199,7 +199,7 @@ final class CharacterWritingViewController: UIViewController {
             loadInterstitialAd()
         })
         alert.addAction(UIAlertAction(title: L.buttonCancel, style: .cancel))
-        present(alert, animated: true)
+        presentAlert(alert)
     }
 
     private func refreshUI() {

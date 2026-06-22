@@ -141,7 +141,7 @@ final class CardDecorateViewController: UIViewController {
         let pngData = renderCardPNG()
         let ok = InstagramStoryShareService.share(pngData: pngData)
         if !ok {
-            showAlert(title: L.alertShareFailedTitle, message: L.alertShareFailedMessage)
+            presentAlert(title: L.alertShareFailedTitle, message: L.alertShareFailedMessage)
         }
     }
 
@@ -152,7 +152,7 @@ final class CardDecorateViewController: UIViewController {
                 case .authorized, .limited:
                     authorized()
                 default:
-                    self?.showAlert(title: L.alertSaveFailedTitle, message: L.alertSaveFailedMessage)
+                    self?.presentAlert(title: L.alertSaveFailedTitle, message: L.alertSaveFailedMessage)
                 }
             }
         }
@@ -173,9 +173,4 @@ final class CardDecorateViewController: UIViewController {
         }
     }
 
-    private func showAlert(title: String, message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: L.buttonConfirm, style: .default))
-        present(alert, animated: true)
-    }
 }

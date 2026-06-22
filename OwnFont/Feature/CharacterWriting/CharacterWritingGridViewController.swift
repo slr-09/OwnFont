@@ -234,7 +234,7 @@ final class CharacterWritingGridViewController: UIViewController,
             loadInterstitialAd()
         })
         alert.addAction(UIAlertAction(title: L.buttonCancel, style: .cancel))
-        present(alert, animated: true)
+        presentAlert(alert)
     }
 
     // MARK: - UICollectionViewDataSource

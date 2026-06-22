@@ -79,7 +79,7 @@ final class PhotoDecorateViewController: UIViewController {
         let pngData = contentView.renderCompositeImage()
         let ok = InstagramStoryShareService.share(pngData: pngData)
         if !ok {
-            showAlert(title: L.alertShareFailedTitle, message: L.alertShareFailedMessage)
+            presentAlert(title: L.alertShareFailedTitle, message: L.alertShareFailedMessage)
         }
     }
 
@@ -87,7 +87,7 @@ final class PhotoDecorateViewController: UIViewController {
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { [weak self] status in
             DispatchQueue.main.async {
                 guard status == .authorized || status == .limited else {
-                    self?.showAlert(title: L.alertSaveFailedTitle, message: L.alertSaveFailedMessage)
+                    self?.presentAlert(title: L.alertSaveFailedTitle, message: L.alertSaveFailedMessage)
                     return
                 }
                 PHPhotoLibrary.shared().performChanges({
@@ -103,9 +103,4 @@ final class PhotoDecorateViewController: UIViewController {
         }
     }
 
-    private func showAlert(title: String, message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: L.buttonConfirm, style: .default))
-        present(alert, animated: true)
-    }
 }
