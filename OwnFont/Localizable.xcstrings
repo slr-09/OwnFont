@@ -103,6 +103,57 @@
         }
       }
     },
+    "alert.unsavedChanges.leave" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "나가기"
+          }
+        }
+      }
+    },
+    "alert.unsavedChanges.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your edits will be lost if you go back now."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지금 나가면 편집한 내용이 사라져요."
+          }
+        }
+      }
+    },
+    "alert.unsavedChanges.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard changes?"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "변경 내용을 버릴까요?"
+          }
+        }
+      }
+    },
     "badge.completed" : {
       "extractionState" : "stale",
       "localizations" : {

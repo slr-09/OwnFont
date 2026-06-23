@@ -21,6 +21,7 @@ final class PhotoDecorateView: UIView {
     // MARK: - Publisher
 
     let actionPublisher = PassthroughSubject<Action, Never>()
+    private(set) var hasUnsavedChanges: Bool = false
 
     // MARK: - Private State
 
@@ -367,6 +368,10 @@ final class PhotoDecorateView: UIView {
         }
     }
 
+    func markChangesSaved() {
+        hasUnsavedChanges = false
+    }
+
     // MARK: - Sticker Management
 
     private func bindStickerCallbacks(_ sticker: TextStickerView) {
@@ -378,6 +383,13 @@ final class PhotoDecorateView: UIView {
             guard let self, let sticker else { return }
             self.handleStickerPan(sticker, state: state)
         }
+        sticker.onTransformChanged = { [weak self] in
+            self?.markChanged()
+        }
+    }
+
+    private func markChanged() {
+        hasUnsavedChanges = true
     }
 
     // MARK: - Trash Zone
@@ -389,6 +401,7 @@ final class PhotoDecorateView: UIView {
             updateTrashHighlight(for: sticker)
         case .changed:
             updateTrashHighlight(for: sticker)
+            markChanged()
         case .ended:
             if isStickerOverTrash(sticker) { deleteSticker(sticker) }
             hideTrashView()
@@ -435,6 +448,7 @@ final class PhotoDecorateView: UIView {
     }
 
     private func deleteSticker(_ sticker: TextStickerView) {
+        markChanged()
         UIView.animate(withDuration: 0.2, animations: {
             sticker.alpha = 0
             sticker.transform = sticker.transform.scaledBy(x: 0.1, y: 0.1)
@@ -591,6 +605,11 @@ final class PhotoDecorateView: UIView {
 
         let target: TextStickerView
         if let existing = editingSticker {
+            if existing.stickerText != text ||
+                existing.stickerFontSize != currentFontSize ||
+                !existing.stickerColor.isEqual(currentTextColor) {
+                markChanged()
+            }
             existing.configure(text: text, fontSize: currentFontSize, color: currentTextColor)
             target = existing
         } else {
@@ -601,6 +620,7 @@ final class PhotoDecorateView: UIView {
             bindStickerCallbacks(sticker)
             target = sticker
             actionPublisher.send(.textStickerAdded)
+            markChanged()
         }
 
         animateOverlayOut(target: target)

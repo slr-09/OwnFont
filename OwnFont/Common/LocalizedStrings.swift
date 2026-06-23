@@ -98,6 +98,9 @@ static var tabBarCharacterIcon:   String {
     static var alertShareFailedMessage: String { s("alert.shareFailed.message") }
     static var alertSaveFailedTitle:    String { s("alert.saveFailed.title") }
     static var alertSaveFailedMessage:  String { s("alert.saveFailed.message") }
+    static var alertUnsavedChangesTitle: String { s("alert.unsavedChanges.title") }
+    static var alertUnsavedChangesMessage: String { s("alert.unsavedChanges.message") }
+    static var alertUnsavedChangesLeave: String { s("alert.unsavedChanges.leave") }
 
     static func alertClearAllTitle(_ categoryTitle: String) -> String {
         LanguageManager.shared.string("alert.clearAll.title", categoryTitle)

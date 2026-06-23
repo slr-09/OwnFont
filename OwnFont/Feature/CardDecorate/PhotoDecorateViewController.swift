@@ -42,6 +42,11 @@ final class PhotoDecorateViewController: UIViewController {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: false)
         navigationController?.interactivePopGestureRecognizer?.isEnabled = true
+        navigationController?.interactivePopGestureRecognizer?.delegate = self
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
         navigationController?.interactivePopGestureRecognizer?.delegate = nil
     }
 
@@ -54,7 +59,7 @@ final class PhotoDecorateViewController: UIViewController {
                 guard let self else { return }
                 switch action {
                 case .back:
-                    navigationController?.popViewController(animated: true)
+                    handleBack()
                 case .save:
                     AnalyticsManager.shared.log(.decorateSaveImage(source: .photo))
                     renderAndSave()
@@ -69,6 +74,24 @@ final class PhotoDecorateViewController: UIViewController {
     }
 
     // MARK: - Save & Share
+
+    private func handleBack() {
+        guard contentView.hasUnsavedChanges else {
+            navigationController?.popViewController(animated: true)
+            return
+        }
+
+        let alert = UIAlertController(
+            title: L.alertUnsavedChangesTitle,
+            message: L.alertUnsavedChangesMessage,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: L.alertUnsavedChangesLeave, style: .destructive) { [weak self] _ in
+            self?.navigationController?.popViewController(animated: true)
+        })
+        alert.addAction(UIAlertAction(title: L.buttonCancel, style: .cancel))
+        presentAlert(alert)
+    }
 
     private func renderAndSave() {
         let pngData = contentView.renderCompositeImage()
@@ -95,6 +118,9 @@ final class PhotoDecorateViewController: UIViewController {
                     request.addResource(with: .photo, data: data, options: nil)
                 }) { _, error in
                     DispatchQueue.main.async {
+                        if error == nil {
+                            self?.contentView.markChangesSaved()
+                        }
                         ToastManager.show(error != nil ? L.toastSaveFailed : L.toastSaveCompleted,
                                           style: error != nil ? .error : .success)
                     }
@@ -103,4 +129,19 @@ final class PhotoDecorateViewController: UIViewController {
         }
     }
 
+}
+
+// MARK: - UIGestureRecognizerDelegate
+
+extension PhotoDecorateViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard let interactivePopGestureRecognizer = navigationController?.interactivePopGestureRecognizer,
+              gestureRecognizer === interactivePopGestureRecognizer else {
+            return true
+        }
+
+        guard contentView.hasUnsavedChanges else { return true }
+        handleBack()
+        return false
+    }
 }

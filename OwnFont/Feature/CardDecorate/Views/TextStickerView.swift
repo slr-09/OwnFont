@@ -10,6 +10,7 @@ final class TextStickerView: UIView {
 
     var onTap: (() -> Void)?
     var onPanStateChanged: ((UIGestureRecognizer.State) -> Void)?
+    var onTransformChanged: (() -> Void)?
 
     private(set) var stickerText: String = ""
     private(set) var stickerFontSize: CGFloat = 36
@@ -76,13 +77,17 @@ final class TextStickerView: UIView {
     }
 
     func scale(by scale: CGFloat) {
+        guard abs(scale - 1) > 0.001 else { return }
         currentScale = max(0.3, min(currentScale * scale, 5))
         applyTransform()
+        onTransformChanged?()
     }
 
     func rotate(by rotation: CGFloat) {
+        guard abs(rotation) > 0.001 else { return }
         currentRotation += rotation
         applyTransform()
+        onTransformChanged?()
     }
 
     // MARK: - Size Measurement
