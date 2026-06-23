@@ -75,6 +75,16 @@ final class TextStickerView: UIView {
         )
     }
 
+    func scale(by scale: CGFloat) {
+        currentScale = max(0.3, min(currentScale * scale, 5))
+        applyTransform()
+    }
+
+    func rotate(by rotation: CGFloat) {
+        currentRotation += rotation
+        applyTransform()
+    }
+
     // MARK: - Size Measurement
 
     private func measureFinalSize(maxWidth: CGFloat) -> CGSize {
@@ -124,15 +134,13 @@ final class TextStickerView: UIView {
     }
 
     @objc private func handlePinch(_ r: UIPinchGestureRecognizer) {
-        currentScale = max(0.3, min(currentScale * r.scale, 5))
+        scale(by: r.scale)
         r.scale = 1
-        applyTransform()
     }
 
     @objc private func handleRotation(_ r: UIRotationGestureRecognizer) {
-        currentRotation += r.rotation
+        rotate(by: r.rotation)
         r.rotation = 0
-        applyTransform()
     }
 
     private func applyTransform() {

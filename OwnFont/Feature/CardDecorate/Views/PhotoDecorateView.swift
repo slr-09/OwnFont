@@ -29,6 +29,8 @@ final class PhotoDecorateView: UIView {
     private weak var overlayView: UIView?
     private weak var overlayControlsBar: UIView?
     private weak var overlayTextView: UITextView?
+    private weak var canvasPinchSticker: TextStickerView?
+    private weak var canvasRotationSticker: TextStickerView?
     private var currentTextColor: UIColor = .white
     private var currentFontSize: CGFloat = 36
     private var colorChips: [UIButton] = []
@@ -250,6 +252,14 @@ final class PhotoDecorateView: UIView {
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
         textButton.addTarget(self, action: #selector(handleAddText), for: .touchUpInside)
         shareButton.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
+
+        let canvasPinch = UIPinchGestureRecognizer(target: self, action: #selector(handleCanvasPinch))
+        canvasPinch.delegate = self
+        stickerCanvas.addGestureRecognizer(canvasPinch)
+
+        let canvasRotation = UIRotationGestureRecognizer(target: self, action: #selector(handleCanvasRotation))
+        canvasRotation.delegate = self
+        stickerCanvas.addGestureRecognizer(canvasRotation)
     }
 
     @objc private func handleBack()    { actionPublisher.send(.back) }
@@ -257,6 +267,87 @@ final class PhotoDecorateView: UIView {
     @objc private func handleShare()   { actionPublisher.send(.share) }
     @objc private func handleAddText() {
         showTextEditOverlay(editing: nil)
+    }
+
+    @objc private func handleCanvasPinch(_ recognizer: UIPinchGestureRecognizer) {
+        switch recognizer.state {
+        case .began:
+            canvasPinchSticker = canvasGestureCandidate(for: recognizer)
+            if let sticker = canvasPinchSticker {
+                sticker.superview?.bringSubviewToFront(sticker)
+            }
+            fallthrough
+        case .changed:
+            canvasPinchSticker?.scale(by: recognizer.scale)
+            recognizer.scale = 1
+        case .ended, .cancelled, .failed:
+            canvasPinchSticker = nil
+            recognizer.scale = 1
+        default:
+            break
+        }
+    }
+
+    @objc private func handleCanvasRotation(_ recognizer: UIRotationGestureRecognizer) {
+        switch recognizer.state {
+        case .began:
+            canvasRotationSticker = canvasGestureCandidate(for: recognizer)
+            if let sticker = canvasRotationSticker {
+                sticker.superview?.bringSubviewToFront(sticker)
+            }
+            fallthrough
+        case .changed:
+            canvasRotationSticker?.rotate(by: recognizer.rotation)
+            recognizer.rotation = 0
+        case .ended, .cancelled, .failed:
+            canvasRotationSticker = nil
+            recognizer.rotation = 0
+        default:
+            break
+        }
+    }
+
+    private func canvasGestureCandidate(for recognizer: UIGestureRecognizer) -> TextStickerView? {
+        guard recognizer.numberOfTouches >= 2 else { return nil }
+
+        var touchedStickers: [TextStickerView] = []
+        for index in 0..<recognizer.numberOfTouches {
+            let point = recognizer.location(ofTouch: index, in: stickerCanvas)
+            guard let sticker = topmostSticker(containing: point),
+                  !touchedStickers.contains(where: { $0 === sticker }) else { continue }
+            touchedStickers.append(sticker)
+        }
+
+        guard touchedStickers.count == 1, let sticker = touchedStickers.first else { return nil }
+
+        let allTouchesInsideSticker = (0..<recognizer.numberOfTouches).allSatisfy { index in
+            let point = recognizer.location(ofTouch: index, in: stickerCanvas)
+            let stickerPoint = stickerCanvas.convert(point, to: sticker)
+            return sticker.bounds.contains(stickerPoint)
+        }
+        return allTouchesInsideSticker ? nil : sticker
+    }
+
+    private func topmostSticker(containing point: CGPoint) -> TextStickerView? {
+        for case let sticker as TextStickerView in stickerCanvas.subviews.reversed() {
+            let stickerPoint = stickerCanvas.convert(point, to: sticker)
+            if sticker.bounds.contains(stickerPoint) { return sticker }
+        }
+        return nil
+    }
+
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard gestureRecognizer.view === stickerCanvas else {
+            return super.gestureRecognizerShouldBegin(gestureRecognizer)
+        }
+
+        if let pinch = gestureRecognizer as? UIPinchGestureRecognizer {
+            return canvasGestureCandidate(for: pinch) != nil
+        }
+        if gestureRecognizer is UIRotationGestureRecognizer {
+            return canvasGestureCandidate(for: gestureRecognizer) != nil
+        }
+        return super.gestureRecognizerShouldBegin(gestureRecognizer)
     }
 
     // MARK: - Public
@@ -697,5 +788,14 @@ extension PhotoDecorateView: UITextViewDelegate {
     func textViewDidChange(_ textView: UITextView) {
         guard textView === overlayTextView else { return }
         GlyphKerning.apply(to: textView.textStorage)
+    }
+}
+
+// MARK: - UIGestureRecognizerDelegate
+
+extension PhotoDecorateView: UIGestureRecognizerDelegate {
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
     }
 }
