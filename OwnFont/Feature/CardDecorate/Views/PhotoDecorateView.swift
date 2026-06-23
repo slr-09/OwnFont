@@ -27,6 +27,8 @@ final class PhotoDecorateView: UIView {
     private var lastPhotoImageBounds: CGRect = .zero
     private var editingSticker: TextStickerView?
     private weak var overlayView: UIView?
+    private weak var overlayCloseButton: UIButton?
+    private weak var overlayDoneButton: UIButton?
     private weak var overlayControlsBar: UIView?
     private weak var overlayTextView: UITextView?
     private weak var canvasPinchSticker: TextStickerView?
@@ -466,10 +468,22 @@ final class PhotoDecorateView: UIView {
             sticker.isHidden = true
             tv.transform = stickerToTextViewTransform(sticker: sticker, textView: tv, in: overlay)
         }
+        [closeBtn, doneBtn].forEach {
+            $0.alpha = 0
+            $0.transform = CGAffineTransform(translationX: 0, y: -8)
+        }
+        controlsBar.alpha = 0
+        controlsBar.transform = CGAffineTransform(translationX: 0, y: 24)
 
-        UIView.animate(withDuration: 0.25, delay: 0, options: [.curveEaseOut], animations: {
+        UIView.animate(withDuration: 0.28, delay: 0, options: [.curveEaseOut], animations: {
             overlay.alpha = 1
             self.overlayTextView?.transform = .identity
+            closeBtn.alpha = 1
+            closeBtn.transform = .identity
+            doneBtn.alpha = 1
+            doneBtn.transform = .identity
+            controlsBar.alpha = 1
+            controlsBar.transform = .identity
         }, completion: { _ in
             self.overlayTextView?.becomeFirstResponder()
         })
@@ -513,6 +527,8 @@ final class PhotoDecorateView: UIView {
     private func addOverlayTopBar(to overlay: UIView) -> (close: UIButton, done: UIButton) {
         let closeBtn = makeOverlayIconButton(systemName: "xmark")
         let doneBtn = makeOverlayTextButton(title: L.buttonDone)
+        overlayCloseButton = closeBtn
+        overlayDoneButton = doneBtn
         overlay.addSubview(closeBtn)
         overlay.addSubview(doneBtn)
         closeBtn.snp.makeConstraints { make in
@@ -594,11 +610,20 @@ final class PhotoDecorateView: UIView {
     private func animateOverlayOut(target: TextStickerView?) {
         guard let overlay = overlayView else { return }
         overlay.layoutIfNeeded()
+        let closeBtn = overlayCloseButton
+        let doneBtn = overlayDoneButton
+        let controlsBar = overlayControlsBar
 
         if let target, let tv = overlayTextView {
             let endTransform = stickerToTextViewTransform(sticker: target, textView: tv, in: overlay)
             UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseIn], animations: {
                 tv.transform = endTransform
+                closeBtn?.alpha = 0
+                closeBtn?.transform = CGAffineTransform(translationX: 0, y: -8)
+                doneBtn?.alpha = 0
+                doneBtn?.transform = CGAffineTransform(translationX: 0, y: -8)
+                controlsBar?.alpha = 0
+                controlsBar?.transform = CGAffineTransform(translationX: 0, y: 24)
                 overlay.alpha = 0
             }, completion: { _ in
                 target.isHidden = false
@@ -606,7 +631,15 @@ final class PhotoDecorateView: UIView {
                 overlay.removeFromSuperview()
             })
         } else {
-            UIView.animate(withDuration: 0.15, animations: { overlay.alpha = 0 }) { _ in
+            UIView.animate(withDuration: 0.18, delay: 0, options: [.curveEaseIn], animations: {
+                closeBtn?.alpha = 0
+                closeBtn?.transform = CGAffineTransform(translationX: 0, y: -8)
+                doneBtn?.alpha = 0
+                doneBtn?.transform = CGAffineTransform(translationX: 0, y: -8)
+                controlsBar?.alpha = 0
+                controlsBar?.transform = CGAffineTransform(translationX: 0, y: 24)
+                overlay.alpha = 0
+            }) { _ in
                 overlay.removeFromSuperview()
             }
         }
