@@ -32,6 +32,9 @@ final class CharacterWritingGridCell: UICollectionViewCell, PKCanvasViewDelegate
     // MARK: - Callbacks
     var onFocusRequest: (() -> Void)?
     var onDrawingChanged: ((PKDrawing) -> Void)?
+    private var cachedDrawing: PKDrawing?
+    private var isCellFocused = false
+    private var isApplyingProgrammaticDrawing = false
 
     // MARK: - Init
     override init(frame: CGRect) {
@@ -84,7 +87,12 @@ final class CharacterWritingGridCell: UICollectionViewCell, PKCanvasViewDelegate
         super.prepareForReuse()
         onFocusRequest = nil
         onDrawingChanged = nil
+        cachedDrawing = nil
+        isCellFocused = false
+        isApplyingProgrammaticDrawing = true
         canvasContainer.clearDrawing()
+        canvasContainer.setPreviewDrawing(nil)
+        isApplyingProgrammaticDrawing = false
         canvasContainer.setGuideChar("")
         charLabel.text = nil
         completionBadge.isHidden = true
@@ -98,16 +106,37 @@ final class CharacterWritingGridCell: UICollectionViewCell, PKCanvasViewDelegate
         onDrawingChanged = nil
         charLabel.text = character
         canvasContainer.setGuideChar(character)
-        if let drawing {
-            canvasContainer.drawing = drawing
-        } else {
-            canvasContainer.clearDrawing()
-        }
+        cachedDrawing = drawing
         completionBadge.isHidden = !isCompleted
-        setFocused(isFocused)
+        isCellFocused = isFocused
+        applyCanvasMode(focused: isFocused)
+        updateFocusBorder(isFocused)
     }
 
     func setFocused(_ focused: Bool) {
+        guard focused != isCellFocused else {
+            updateFocusBorder(focused)
+            return
+        }
+        if !focused, isCellFocused {
+            cachedDrawing = canvasContainer.drawing
+        }
+        isCellFocused = focused
+        applyCanvasMode(focused: focused)
+        updateFocusBorder(focused)
+    }
+
+    private func applyCanvasMode(focused: Bool) {
+        isApplyingProgrammaticDrawing = true
+        if focused {
+            canvasContainer.setEditableDrawing(cachedDrawing)
+        } else {
+            canvasContainer.setPreviewDrawing(cachedDrawing)
+        }
+        isApplyingProgrammaticDrawing = false
+    }
+
+    private func updateFocusBorder(_ focused: Bool) {
         contentView.layer.borderColor = (focused ? UIColor.primary : UIColor.surfaceSecondary).cgColor
         contentView.layer.borderWidth = focused ? 2.5 : 1.5
     }
@@ -122,6 +151,8 @@ final class CharacterWritingGridCell: UICollectionViewCell, PKCanvasViewDelegate
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+        guard !isApplyingProgrammaticDrawing else { return }
+        cachedDrawing = canvasView.drawing
         onDrawingChanged?(canvasView.drawing)
     }
 }

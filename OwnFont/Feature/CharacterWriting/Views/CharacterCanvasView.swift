@@ -21,6 +21,16 @@ final class CharacterCanvasView: UIView {
 
     private var lastGuideHeight: CGFloat = 0
     private var guideBaselineConstraint: Constraint?
+    private var previewDrawing: PKDrawing?
+    private var lastPreviewSize: CGSize = .zero
+
+    private let previewImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.backgroundColor = .clear
+        imageView.contentMode = .scaleToFill
+        imageView.isUserInteractionEnabled = false
+        return imageView
+    }()
 
     let canvasView: PKCanvasView = {
         let canvas = PKCanvasView()
@@ -51,6 +61,12 @@ final class CharacterCanvasView: UIView {
         canvasView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
+
+        addSubview(previewImageView)
+        previewImageView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        previewImageView.isHidden = true
     }
 
     required init?(coder: NSCoder) {
@@ -61,9 +77,11 @@ final class CharacterCanvasView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        guard bounds.height > 0, bounds.height != lastGuideHeight else { return }
-        lastGuideHeight = bounds.height
-        updateGuideLayout()
+        if bounds.height > 0, bounds.height != lastGuideHeight {
+            lastGuideHeight = bounds.height
+            updateGuideLayout()
+        }
+        updatePreviewImageIfNeeded()
     }
 
     // 캔버스 = em 전체(0~1000) 표현. 베이스라인은 상단 85% 지점.
@@ -94,7 +112,10 @@ final class CharacterCanvasView: UIView {
     }
 
     func clearDrawing() {
+        previewDrawing = nil
+        previewImageView.image = nil
         canvasView.drawing = PKDrawing()
+        canvasView.undoManager?.removeAllActions()
     }
 
     func usePen() {
@@ -107,12 +128,49 @@ final class CharacterCanvasView: UIView {
     }
 
     func undo() {
+        guard !canvasView.isHidden, window != nil, canvasView.undoManager?.canUndo == true else { return }
         canvasView.undoManager?.undo()
     }
 
     var drawing: PKDrawing {
-        get { canvasView.drawing }
-        set { canvasView.drawing = newValue }
+        get { canvasView.isHidden ? (previewDrawing ?? PKDrawing()) : canvasView.drawing }
+        set { setEditableDrawing(newValue) }
+    }
+
+    func setEditableDrawing(_ drawing: PKDrawing?) {
+        previewDrawing = nil
+        previewImageView.image = nil
+        previewImageView.isHidden = true
+        canvasView.isHidden = false
+        canvasView.isUserInteractionEnabled = true
+        canvasView.drawing = drawing ?? PKDrawing()
+        canvasView.undoManager?.removeAllActions()
+    }
+
+    func setPreviewDrawing(_ drawing: PKDrawing?) {
+        previewDrawing = drawing
+        previewImageView.isHidden = false
+        canvasView.isUserInteractionEnabled = false
+        canvasView.isHidden = true
+        canvasView.drawing = PKDrawing()
+        canvasView.undoManager?.removeAllActions()
+        updatePreviewImageIfNeeded(force: true)
+    }
+
+    private func updatePreviewImageIfNeeded(force: Bool = false) {
+        guard !previewImageView.isHidden else { return }
+        let size = bounds.size
+        guard size.width > 0, size.height > 0 else { return }
+        guard force || size != lastPreviewSize else { return }
+        lastPreviewSize = size
+
+        guard let previewDrawing, !previewDrawing.strokes.isEmpty else {
+            previewImageView.image = nil
+            return
+        }
+
+        let renderBounds = CGRect(origin: .zero, size: size)
+        previewImageView.image = previewDrawing.image(from: renderBounds, scale: UIScreen.main.scale)
     }
 
     // MARK: - Draw (격자선)
