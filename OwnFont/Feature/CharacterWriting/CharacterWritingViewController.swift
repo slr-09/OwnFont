@@ -115,6 +115,8 @@ final class CharacterWritingViewController: UIViewController {
         )
         if let first = chars.indices.first(where: { !completedIndices.contains($0) }) {
             currentIndex = first
+        } else if let first = chars.indices.first, !chars.indices.contains(currentIndex) {
+            currentIndex = first
         }
     }
 
@@ -123,7 +125,7 @@ final class CharacterWritingViewController: UIViewController {
     private func saveAndCycleToNext() {
         saveCurrentGlyph()
         let total = category.characters.count
-        guard total > 1 else { return }
+        guard total > 1, normalizeCurrentIndex() else { return }
         currentIndex = (currentIndex + 1) % total
         refreshUI()
         contentView.scrollToSlot(at: currentIndex)
@@ -131,7 +133,10 @@ final class CharacterWritingViewController: UIViewController {
 
     private func advanceToNextChar() {
         let total = category.characters.count
-        guard currentIndex < total else { return }
+        guard normalizeCurrentIndex(), currentIndex < total else {
+            updateCrashContext(action: "advance_skip_invalid_index")
+            return
+        }
 
         saveCurrentGlyph()
         completedIndices.insert(currentIndex)
@@ -146,7 +151,8 @@ final class CharacterWritingViewController: UIViewController {
 
     /// 슬롯 탭 → 현재 글자 저장 후 해당 인덱스로 이동
     private func navigateTo(index: Int) {
-        guard index != currentIndex, index < category.characters.count else { return }
+        let chars = category.characters
+        guard index != currentIndex, chars.indices.contains(index) else { return }
         saveCurrentGlyph()
         currentIndex = index
         refreshUI()
@@ -162,7 +168,10 @@ final class CharacterWritingViewController: UIViewController {
             return
         }
 
-        let character = category.characters[currentIndex]
+        guard let character = currentCharacter() else {
+            updateCrashContext(action: "save_current_glyph_skip_invalid_index", strokeCount: drawing.strokes.count)
+            return
+        }
         if let saved = GlyphStore.shared.loadDrawing(for: character), saved == drawing {
             updateCrashContext(action: "save_current_glyph_skip_unchanged", strokeCount: drawing.strokes.count)
             return
@@ -230,7 +239,13 @@ final class CharacterWritingViewController: UIViewController {
 
     private func refreshUI() {
         let chars = category.characters
-        guard currentIndex < chars.count else { return }
+        guard normalizeCurrentIndex(), chars.indices.contains(currentIndex) else {
+            updateCrashContext(action: "refresh_ui_skip_invalid_index")
+            contentView.updateCounter(current: 0, total: category.totalCount)
+            contentView.updateProgress(completed: completedIndices.count, total: chars.count)
+            contentView.canvasView.clearDrawing()
+            return
+        }
         updateCrashContext(action: "refresh_ui")
 
         contentView.updateCurrentChar(chars[currentIndex])
@@ -257,6 +272,25 @@ final class CharacterWritingViewController: UIViewController {
         } else {
             contentView.canvasView.clearDrawing()
         }
+    }
+
+    @discardableResult
+    private func normalizeCurrentIndex() -> Bool {
+        let chars = category.characters
+        guard let firstIndex = chars.indices.first else {
+            currentIndex = 0
+            return false
+        }
+        if !chars.indices.contains(currentIndex) {
+            currentIndex = firstIndex
+        }
+        return true
+    }
+
+    private func currentCharacter() -> String? {
+        let chars = category.characters
+        guard chars.indices.contains(currentIndex) else { return nil }
+        return chars[currentIndex]
     }
 
     private func updateCrashContext(action: String, strokeCount: Int? = nil) {
