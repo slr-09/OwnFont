@@ -23,6 +23,7 @@ final class CharacterCanvasView: UIView {
     private var guideBaselineConstraint: Constraint?
     private var previewDrawing: PKDrawing?
     private var lastPreviewSize: CGSize = .zero
+    private var isCanvasAttached = false
 
     private let previewImageView: UIImageView = {
         let imageView = UIImageView()
@@ -55,11 +56,6 @@ final class CharacterCanvasView: UIView {
             guideBaselineConstraint = make.firstBaseline.equalTo(snp.top).offset(0).constraint
             make.centerX.equalToSuperview()
             make.width.lessThanOrEqualToSuperview()
-        }
-
-        addSubview(canvasView)
-        canvasView.snp.makeConstraints { make in
-            make.edges.equalToSuperview()
         }
 
         addSubview(previewImageView)
@@ -111,11 +107,33 @@ final class CharacterCanvasView: UIView {
         canvasView.becomeFirstResponder()
     }
 
+    /// 편집 중인 셀만 canvasView를 뷰 계층에 붙인다.
+    /// PKCanvasView는 레이아웃이 한 번이라도 돌면 내부적으로 Metal 기반 tile renderer를
+    /// 생성하므로, 편집하지 않는 셀까지 붙여두면 그리드 스크롤만으로 GPU 메모리가 급증해
+    /// bad_alloc 크래시로 이어진다. 포커스를 잃으면 즉시 떼어내 layoutSubviews 자체가
+    /// 돌지 않게 한다.
+    private func attachCanvasIfNeeded() {
+        guard !isCanvasAttached else { return }
+        insertSubview(canvasView, belowSubview: previewImageView)
+        canvasView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        isCanvasAttached = true
+    }
+
+    private func detachCanvasIfNeeded() {
+        guard isCanvasAttached else { return }
+        canvasView.removeFromSuperview()
+        isCanvasAttached = false
+    }
+
     func clearDrawing() {
         previewDrawing = nil
         previewImageView.image = nil
-        canvasView.drawing = PKDrawing()
-        canvasView.undoManager?.removeAllActions()
+        if isCanvasAttached {
+            canvasView.drawing = PKDrawing()
+            canvasView.undoManager?.removeAllActions()
+        }
     }
 
     func usePen() {
@@ -141,6 +159,7 @@ final class CharacterCanvasView: UIView {
         previewDrawing = nil
         previewImageView.image = nil
         previewImageView.isHidden = true
+        attachCanvasIfNeeded()
         canvasView.isHidden = false
         canvasView.isUserInteractionEnabled = true
         canvasView.drawing = drawing ?? PKDrawing()
@@ -152,8 +171,7 @@ final class CharacterCanvasView: UIView {
         previewImageView.isHidden = false
         canvasView.isUserInteractionEnabled = false
         canvasView.isHidden = true
-        canvasView.drawing = PKDrawing()
-        canvasView.undoManager?.removeAllActions()
+        detachCanvasIfNeeded()
         updatePreviewImageIfNeeded(force: true)
     }
 
