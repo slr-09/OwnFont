@@ -25,6 +25,10 @@ final class CharacterCanvasView: UIView {
     private var lastPreviewSize: CGSize = .zero
     private var isCanvasAttached = false
 
+    /// 캔버스가 분리된 상태에서 이 뷰 영역에 터치가 처음 닿았을 때 호출된다.
+    /// (예: 포커스 없는 셀을 탭 없이 바로 펜슬로 긋기 시작하는 경우)
+    var onTouchWhileDetached: (() -> Void)?
+
     private let previewImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.backgroundColor = .clear
@@ -67,6 +71,22 @@ final class CharacterCanvasView: UIView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    // MARK: - Hit Testing
+
+    /// 캔버스가 붙어있지 않은 상태(미포커스 셀)에서 탭 없이 곧바로 펜슬 획이 시작되면
+    /// UITapGestureRecognizer는 이동이 있는 터치를 탭으로 인식하지 못해 실패하고,
+    /// 그 결과 onFocusRequest가 호출되지 않아 캔버스가 영영 붙지 않는다.
+    /// 그 사이 터치는 상위 UICollectionView의 스크롤 팬 제스처가 가져가버려
+    /// "그려지지 않고 스크롤만 되는" 증상으로 이어진다.
+    /// 터치가 실제로 라우팅되기 전(hitTest)에 캔버스를 동기적으로 붙여
+    /// 같은 터치가 바로 캔버스로 전달되도록 한다.
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        if !isCanvasAttached, bounds.contains(point) {
+            onTouchWhileDetached?()
+        }
+        return super.hitTest(point, with: event)
     }
 
     // MARK: - Layout
@@ -127,13 +147,19 @@ final class CharacterCanvasView: UIView {
         isCanvasAttached = false
     }
 
+    /// 미리보기 모드(그리드의 미포커스 셀)라면 실제 캔버스를 붙이지 않고 미리보기 이미지만 비운다.
+    /// 그 외(편집 모드이거나, 아직 편집/미리보기 모드가 정해지지 않은 초기 상태 — 예: 저장된
+    /// 드로잉이 없는 새 글자를 처음 보여줄 때)에는 캔버스를 편집 가능한 빈 상태로 만든다.
+    /// 과거에는 이미 붙어있는 캔버스만 비웠는데, CharacterWritingViewController처럼 캔버스가
+    /// 한 번도 붙은 적 없는 화면에서 clearDrawing()이 아무 효과도 내지 못해(붙지 않은 채로 남아)
+    /// 아예 그려지지 않는 문제가 있었다.
     func clearDrawing() {
-        previewDrawing = nil
-        previewImageView.image = nil
-        if isCanvasAttached {
-            canvasView.drawing = PKDrawing()
-            canvasView.undoManager?.removeAllActions()
+        guard previewImageView.isHidden else {
+            previewDrawing = nil
+            previewImageView.image = nil
+            return
         }
+        setEditableDrawing(nil)
     }
 
     func usePen() {

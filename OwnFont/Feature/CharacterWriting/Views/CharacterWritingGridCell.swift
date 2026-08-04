@@ -42,6 +42,9 @@ final class CharacterWritingGridCell: UICollectionViewCell, PKCanvasViewDelegate
         setupLayout()
         setupGesture()
         canvasContainer.canvasView.delegate = self
+        canvasContainer.onTouchWhileDetached = { [weak self] in
+            self?.onFocusRequest?()
+        }
     }
 
     required init?(coder: NSCoder) {
