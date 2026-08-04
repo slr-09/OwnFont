@@ -76,6 +76,7 @@ final class CharacterSetViewController: UIViewController {
         updateCompletionCounts()
         bindStore()
         loadNativeAd()
+        InterstitialAdGate.shared.preload()
     }
 
     override func viewWillAppear(_ animated: Bool) {

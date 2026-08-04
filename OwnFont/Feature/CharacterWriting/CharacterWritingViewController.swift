@@ -4,7 +4,6 @@
 //
 
 import Combine
-import GoogleMobileAds
 import UIKit
 import PencilKit
 
@@ -15,11 +14,6 @@ final class CharacterWritingViewController: UIViewController {
     private var currentIndex: Int = 0
     private var completedIndices: Set<Int> = []
     private var cancellables = Set<AnyCancellable>()
-    private var interstitial: InterstitialAd?
-
-    /// 이번 방문에서 새로 쓴(저장한) 글자 인덱스. 전면 광고 노출 기준에 사용한다.
-    private var sessionWrittenIndices: Set<Int> = []
-    private static let adMinWriteCount = 5
 
     private var contentView: CharacterWritingView {
         view as! CharacterWritingView
@@ -48,9 +42,7 @@ final class CharacterWritingViewController: UIViewController {
         contentView.canvasView.usePen()
         restoreCompletedIndices()
         refreshUI()
-        if completedIndices.count < category.characters.count {
-            loadInterstitialAd()
-        }
+        InterstitialAdGate.shared.preload()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -69,7 +61,7 @@ final class CharacterWritingViewController: UIViewController {
                 switch action {
                 case .back:
                     updateCrashContext(action: "tap_back")
-                    navigationController?.popViewController(animated: true)
+                    showInterstitialOrPop()
                 case .penSelected:
                     updateCrashContext(action: "select_pen")
                     contentView.setActiveTool(isPen: true)
@@ -190,27 +182,20 @@ final class CharacterWritingViewController: UIViewController {
             GlyphData(character: character, normalizedPath: normalizedPath, createdAt: Date())
         )
         GlyphStore.shared.saveDrawing(drawing, for: character)
-        sessionWrittenIndices.insert(currentIndex)
+        InterstitialAdGate.shared.recordWrite()
         updateCrashContext(action: "save_current_glyph_finish", strokeCount: drawing.strokes.count)
     }
 
     // MARK: - Interstitial Ad
 
-    private func loadInterstitialAd() {
-        guard interstitial == nil else { return }
-        guard let adUnitID = Bundle.main.object(forInfoDictionaryKey: "AdMobInterstitialID") as? String else { return }
-        InterstitialAd.load(with: adUnitID, request: Request()) { [weak self] ad, _ in
-            guard let self, let ad else { return }
-            self.interstitial = ad
-            ad.fullScreenContentDelegate = self
-        }
-    }
-
     private func showInterstitialOrPop() {
-        if sessionWrittenIndices.count >= Self.adMinWriteCount, let ad = interstitial {
+        let didPresent = InterstitialAdGate.shared.presentIfEligible(from: self) { [weak self] in
+            guard let self else { return }
+            updateCrashContext(action: "interstitial_dismissed")
+            navigationController?.popViewController(animated: true)
+        }
+        if didPresent {
             updateCrashContext(action: "present_interstitial")
-            interstitial = nil
-            ad.present(from: self)
         } else {
             updateCrashContext(action: "pop_without_interstitial")
             navigationController?.popViewController(animated: true)
@@ -227,11 +212,9 @@ final class CharacterWritingViewController: UIViewController {
             guard let self else { return }
             GlyphStore.shared.deleteAllGlyphs(for: category.characters)
             completedIndices.removeAll()
-            sessionWrittenIndices.removeAll()
             currentIndex = 0
             updateCrashContext(action: "clear_all_confirmed")
             refreshUI()
-            loadInterstitialAd()
         })
         alert.addAction(UIAlertAction(title: L.buttonCancel, style: .cancel))
         presentAlert(alert)
@@ -304,19 +287,5 @@ final class CharacterWritingViewController: UIViewController {
             action: action,
             strokeCount: strokeCount
         )
-    }
-}
-
-// MARK: - FullScreenContentDelegate
-
-extension CharacterWritingViewController: FullScreenContentDelegate {
-    func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
-        updateCrashContext(action: "interstitial_dismissed")
-        navigationController?.popViewController(animated: true)
-    }
-
-    func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
-        updateCrashContext(action: "interstitial_failed_to_present")
-        navigationController?.popViewController(animated: true)
     }
 }
