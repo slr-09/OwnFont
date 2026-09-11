@@ -4,7 +4,6 @@
 //
 
 import Combine
-import GoogleMobileAds
 import UIKit
 import PencilKit
 
@@ -17,11 +16,6 @@ final class CharacterWritingGridViewController: UIViewController,
     private var completedIndices: Set<Int> = []
     private var isPen: Bool = true
     private var cancellables = Set<AnyCancellable>()
-    private var interstitial: InterstitialAd?
-
-    /// 이번 방문에서 새로 쓴(저장한) 글자 인덱스. 전면 광고 노출 기준에 사용한다.
-    private var sessionWrittenIndices: Set<Int> = []
-    private static let adMinWriteCount = 5
 
     private var contentView: CharacterWritingGridView {
         view as! CharacterWritingGridView
@@ -50,8 +44,16 @@ final class CharacterWritingGridViewController: UIViewController,
         bindCallbacks()
         restoreCompletedIndices()
         refreshProgress()
-        if completedIndices.count < category.characters.count {
-            loadInterstitialAd()
+        schedulePreload()
+    }
+
+    /// 화면 진입 직후는 그리드 캔버스들의 PencilKit(Metal) 렌더러가 막 초기화되는 시점이라
+    /// 메모리 여유가 가장 빠듯하다. 광고(WebView 기반) 프리로드가 여기에 겹치지 않도록
+    /// 살짝 늦춰서 요청한다.
+    private func schedulePreload() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard self != nil else { return }
+            InterstitialAdGate.shared.preload()
         }
     }
 
@@ -158,7 +160,6 @@ final class CharacterWritingGridViewController: UIViewController,
         let character = chars[index]
 
         if drawing.strokes.isEmpty {
-            sessionWrittenIndices.remove(index)
             if completedIndices.remove(index) != nil {
                 GlyphStore.shared.deleteAllGlyphs(for: [character])
                 if let cell = contentView.collectionView
@@ -195,7 +196,7 @@ final class CharacterWritingGridViewController: UIViewController,
             GlyphData(character: character, normalizedPath: normalizedPath, createdAt: Date())
         )
         GlyphStore.shared.saveDrawing(drawing, for: character)
-        sessionWrittenIndices.insert(index)
+        InterstitialAdGate.shared.recordWrite()
 
         if completedIndices.insert(index).inserted {
             if let cell = contentView.collectionView
@@ -209,21 +210,14 @@ final class CharacterWritingGridViewController: UIViewController,
 
     // MARK: - Interstitial Ad
 
-    private func loadInterstitialAd() {
-        guard interstitial == nil else { return }
-        guard let adUnitID = Bundle.main.object(forInfoDictionaryKey: "AdMobInterstitialID") as? String else { return }
-        InterstitialAd.load(with: adUnitID, request: Request()) { [weak self] ad, _ in
-            guard let self, let ad else { return }
-            self.interstitial = ad
-            ad.fullScreenContentDelegate = self
-        }
-    }
-
     private func showInterstitialOrPop() {
-        if sessionWrittenIndices.count >= Self.adMinWriteCount, let ad = interstitial {
+        let didPresent = InterstitialAdGate.shared.presentIfEligible(from: self) { [weak self] in
+            guard let self else { return }
+            updateCrashContext(action: "interstitial_dismissed")
+            navigationController?.popViewController(animated: true)
+        }
+        if didPresent {
             updateCrashContext(action: "present_interstitial")
-            interstitial = nil
-            ad.present(from: self)
         } else {
             updateCrashContext(action: "pop_without_interstitial")
             navigationController?.popViewController(animated: true)
@@ -245,7 +239,6 @@ final class CharacterWritingGridViewController: UIViewController,
             guard let self else { return }
             GlyphStore.shared.deleteAllGlyphs(for: category.characters)
             completedIndices.removeAll()
-            sessionWrittenIndices.removeAll()
             updateCrashContext(action: "clear_all_confirmed")
             contentView.collectionView.visibleCells.forEach { cell in
                 guard let c = cell as? CharacterWritingGridCell else { return }
@@ -253,7 +246,6 @@ final class CharacterWritingGridViewController: UIViewController,
                 c.setCompleted(false)
             }
             refreshProgress()
-            loadInterstitialAd()
         })
         alert.addAction(UIAlertAction(title: L.buttonCancel, style: .cancel))
         presentAlert(alert)
@@ -340,19 +332,5 @@ final class CharacterWritingGridViewController: UIViewController,
             action: action,
             strokeCount: strokeCount
         )
-    }
-}
-
-// MARK: - FullScreenContentDelegate
-
-extension CharacterWritingGridViewController: FullScreenContentDelegate {
-    func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
-        updateCrashContext(action: "interstitial_dismissed")
-        navigationController?.popViewController(animated: true)
-    }
-
-    func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
-        updateCrashContext(action: "interstitial_failed_to_present")
-        navigationController?.popViewController(animated: true)
     }
 }
