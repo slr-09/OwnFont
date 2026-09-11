@@ -13,11 +13,24 @@ import UIKit
 /// 쿨다운으로 과다 노출은 막는다.
 final class InterstitialAdGate: NSObject {
     static let shared = InterstitialAdGate()
-    private override init() { super.init() }
+    private override init() {
+        super.init()
+        memoryWarningObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // 메모리 경고 시 미리 로드된 광고(WebView 기반)를 즉시 반납한다.
+            // PencilKit 캔버스가 그림을 그리는 동안 남은 메모리가 우선순위가 더 높다.
+            self?.ad = nil
+        }
+    }
 
     private let defaults = UserDefaults.standard
     private let writeCountKey = "interstitialAdGate.writeCount"
     private let lastShownAtKey = "interstitialAdGate.lastShownAt"
+
+    private var memoryWarningObserver: NSObjectProtocol?
 
     /// 마지막 노출 이후 이만큼 새로 글자를 써야 다음 노출 후보가 된다.
     private let minWriteCount = 5

@@ -44,7 +44,17 @@ final class CharacterWritingGridViewController: UIViewController,
         bindCallbacks()
         restoreCompletedIndices()
         refreshProgress()
-        InterstitialAdGate.shared.preload()
+        schedulePreload()
+    }
+
+    /// 화면 진입 직후는 그리드 캔버스들의 PencilKit(Metal) 렌더러가 막 초기화되는 시점이라
+    /// 메모리 여유가 가장 빠듯하다. 광고(WebView 기반) 프리로드가 여기에 겹치지 않도록
+    /// 살짝 늦춰서 요청한다.
+    private func schedulePreload() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard self != nil else { return }
+            InterstitialAdGate.shared.preload()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
