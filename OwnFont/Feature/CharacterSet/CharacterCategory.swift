@@ -51,7 +51,7 @@ enum CharacterCategory: CaseIterable {
         case .lowercaseLatin:   return 26
         case .uppercaseLatin:   return 26
         case .number:           return 10
-        case .symbol:           return 20
+        case .symbol:           return 29
         case .hangulChoseong:   return 19
         case .hangulJungseong:  return 14
         }
@@ -72,7 +72,10 @@ enum CharacterCategory: CaseIterable {
         case .number:
             return Array("0123456789").map { String($0) }
         case .symbol:
-            return Array("!@#$%^&*()-_+=[]{}:;/:").prefix(20).map { String($0) }
+            // 기존 20자(!@#$%^&*()-_+=[]{}:;)는 유지하고,
+            // 실제 글을 쓸 때 자주 쓰는 문장부호(/ . , ? ' " ~ · …)를 추가로 넣는다.
+            return ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=",
+                    "[", "]", "{", "}", ":", ";", "/", ".", ",", "?", "'", "\"", "~", "·", "…"]
         case .hangulChoseong:
             return HangulComposer.choseongChars
         case .hangulJungseong:
