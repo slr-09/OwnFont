@@ -7,6 +7,7 @@ import GoogleMobileAds
 import PhotosUI
 import UIKit
 import SnapKit
+import UniformTypeIdentifiers
 
 final class CardHomeViewController: UIViewController {
 
@@ -161,6 +162,9 @@ final class CardHomeViewController: UIViewController {
         var config = PHPickerConfiguration(photoLibrary: .shared())
         config.filter = .images
         config.selectionLimit = 1
+        // 호환성을 위해 HEIC 원본을 JPEG로 재인코딩(손실 압축)하지 않도록,
+        // Photos 앱에 보이는 원본 그대로의 표현을 요청한다.
+        config.preferredAssetRepresentationMode = .current
         let picker = PHPickerViewController(configuration: config)
         picker.delegate = self
         present(picker, animated: true)
@@ -241,12 +245,26 @@ extension CardHomeViewController: PHPickerViewControllerDelegate {
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
         picker.dismiss(animated: true)
         guard let provider = results.first?.itemProvider,
-              provider.canLoadObject(ofClass: UIImage.self) else { return }
-        provider.loadObject(ofClass: UIImage.self) { [weak self] object, _ in
-            guard let self, let image = object as? UIImage else { return }
+              provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) else {
+            ToastManager.show(L.toastPhotoLoadFailed, style: .error)
+            return
+        }
+
+        // loadObject(ofClass: UIImage.self)는 원본 대신 저해상도 프록시 이미지를
+        // 반환할 수 있어, Apple 권장 방식대로 원본 파일을 직접 읽어 화질 저하를 방지한다.
+        // iCloud 원본 다운로드 실패 등으로 실패할 수 있으므로 실패 시 토스트로 안내한다.
+        provider.loadFileRepresentation(forTypeIdentifier: UTType.image.identifier) { [weak self] url, _ in
+            guard let url,
+                  let data = try? Data(contentsOf: url),
+                  let image = UIImage(data: data) else {
+                DispatchQueue.main.async {
+                    ToastManager.show(L.toastPhotoLoadFailed, style: .error)
+                }
+                return
+            }
             DispatchQueue.main.async {
                 let vc = PhotoDecorateViewController(photo: image)
-                self.navigationController?.pushViewController(vc, animated: true)
+                self?.navigationController?.pushViewController(vc, animated: true)
             }
         }
     }
