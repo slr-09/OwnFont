@@ -129,6 +129,7 @@ final class CardDecorateViewController: UIViewController {
         let card = contentView.memoCardView
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false
+        format.scale = card.traitCollection.displayScale
         let renderer = UIGraphicsImageRenderer(bounds: card.bounds, format: format)
         return renderer.pngData { ctx in
             card.layer.render(in: ctx.cgContext)
@@ -139,7 +140,7 @@ final class CardDecorateViewController: UIViewController {
 
     private func shareCardToInstagramStory() {
         let pngData = renderCardPNG()
-        let ok = InstagramStoryShareService.share(pngData: pngData)
+        let ok = InstagramStoryShareService.share(imageData: pngData)
         if !ok {
             presentAlert(title: L.alertShareFailedTitle, message: L.alertShareFailedMessage)
         }
