@@ -42,6 +42,7 @@ final class PhotoDecorateView: UIView {
     /// 저장/공유용 합성이 진행 중인지 여부. 완료 전 재탭으로 무거운 합성
     /// 작업이 중복 실행되어 메모리 피크가 배가되는 것을 막는다.
     private var isExportingImage = false
+    private let saveHapticGenerator = UIImpactFeedbackGenerator(style: .light)
 
     private static let stickerColors: [UIColor] = [
         .white, .black, .systemPink, .systemOrange, .systemGreen, .systemYellow, .systemBlue, .systemPurple
@@ -259,6 +260,8 @@ final class PhotoDecorateView: UIView {
     private func setupActions() {
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
+        // 터치 시작 시 미리 준비해두면 실제 탭 시 지연 없이 햅틱이 울린다.
+        saveButton.addTarget(saveHapticGenerator, action: #selector(UIImpactFeedbackGenerator.prepare), for: .touchDown)
         textButton.addTarget(self, action: #selector(handleAddText), for: .touchUpInside)
         shareButton.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
 
@@ -272,7 +275,10 @@ final class PhotoDecorateView: UIView {
     }
 
     @objc private func handleBack()    { actionPublisher.send(.back) }
-    @objc private func handleSave()    { actionPublisher.send(.save) }
+    @objc private func handleSave() {
+        saveHapticGenerator.impactOccurred()
+        actionPublisher.send(.save)
+    }
     @objc private func handleShare()   { actionPublisher.send(.share) }
     @objc private func handleAddText() {
         showTextEditOverlay(editing: nil)
