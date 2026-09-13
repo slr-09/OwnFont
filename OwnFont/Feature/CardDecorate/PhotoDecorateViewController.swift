@@ -94,15 +94,17 @@ final class PhotoDecorateViewController: UIViewController {
     }
 
     private func renderAndSave() {
-        let pngData = contentView.renderCompositeImage()
-        saveToPhotoLibrary(pngData)
+        contentView.renderCompositeImage { [weak self] data in
+            self?.saveToPhotoLibrary(data)
+        }
     }
 
     private func shareToInstagram() {
-        let pngData = contentView.renderCompositeImage()
-        let ok = InstagramStoryShareService.share(pngData: pngData)
-        if !ok {
-            presentAlert(title: L.alertShareFailedTitle, message: L.alertShareFailedMessage)
+        contentView.renderCompositeImage { [weak self] data in
+            let ok = InstagramStoryShareService.share(imageData: data)
+            if !ok {
+                self?.presentAlert(title: L.alertShareFailedTitle, message: L.alertShareFailedMessage)
+            }
         }
     }
 
