@@ -110,8 +110,9 @@ static var tabBarCharacterIcon:   String {
     }
 
     // MARK: - Toast
-    static var toastSaveFailed:    String { s("toast.saveFailed") }
-    static var toastSaveCompleted: String { s("toast.saveCompleted") }
+    static var toastSaveFailed:      String { s("toast.saveFailed") }
+    static var toastSaveCompleted:   String { s("toast.saveCompleted") }
+    static var toastPhotoLoadFailed: String { s("toast.photoLoadFailed") }
 
     // MARK: - Settings
     static var settingsTitle:         String { s("settings.title") }

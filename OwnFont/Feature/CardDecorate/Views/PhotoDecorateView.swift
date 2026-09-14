@@ -39,11 +39,18 @@ final class PhotoDecorateView: UIView {
     private var colorChips: [UIButton] = []
     private var isTrashHighlighted: Bool = false
     private var cancellables = Set<AnyCancellable>()
+    /// 저장/공유용 합성이 진행 중인지 여부. 완료 전 재탭으로 무거운 합성
+    /// 작업이 중복 실행되어 메모리 피크가 배가되는 것을 막는다.
+    private var isExportingImage = false
+    private let saveHapticGenerator = UIImpactFeedbackGenerator(style: .light)
 
     private static let stickerColors: [UIColor] = [
         .white, .black, .systemPink, .systemOrange, .systemGreen, .systemYellow, .systemBlue, .systemPurple
     ]
     private static let fontSizes: [CGFloat] = [24, 36, 52]
+    /// 저장 시 렌더링 결과물의 최대 변 길이(px). 사진첩에서 확대해도 체감 차이가
+    /// 크지 않은 선에서, 저장 시 순간 메모리 사용량을 낮추기 위한 상한선.
+    private static let maxExportDimension: CGFloat = 3000
 
     // MARK: - Nav Bar
 
@@ -253,6 +260,8 @@ final class PhotoDecorateView: UIView {
     private func setupActions() {
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
+        // 터치 시작 시 미리 준비해두면 실제 탭 시 지연 없이 햅틱이 울린다.
+        saveButton.addTarget(saveHapticGenerator, action: #selector(UIImpactFeedbackGenerator.prepare), for: .touchDown)
         textButton.addTarget(self, action: #selector(handleAddText), for: .touchUpInside)
         shareButton.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
 
@@ -266,7 +275,10 @@ final class PhotoDecorateView: UIView {
     }
 
     @objc private func handleBack()    { actionPublisher.send(.back) }
-    @objc private func handleSave()    { actionPublisher.send(.save) }
+    @objc private func handleSave() {
+        saveHapticGenerator.impactOccurred()
+        actionPublisher.send(.save)
+    }
     @objc private func handleShare()   { actionPublisher.send(.share) }
     @objc private func handleAddText() {
         showTextEditOverlay(editing: nil)
@@ -355,9 +367,115 @@ final class PhotoDecorateView: UIView {
 
     // MARK: - Public
 
-    func renderCompositeImage() -> Data {
+    /// 원본 사진 + 스티커를 합성해 JPEG로 내보낸다.
+    ///
+    /// 사진 레이어는 `drawHierarchy`로 캡처하지 않는다 — `UIImageView`가 화면
+    /// 표시를 위해 만들어둔 저해상도 캐시(콘텐츠 텍스처)를 그대로 재사용해,
+    /// 아무리 렌더링 scale을 올려도 확대된 저화질 이미지가 나오기 때문이다.
+    /// 대신 원본 `UIImage`를 직접 그려 항상 원본 픽셀 데이터를 사용한다.
+    ///
+    /// 원본 해상도(최대 수천 px) 합성·인코딩은 무거운 작업이라 메인 스레드에서
+    /// 동기 실행하면 UI가 멈추고 메모리 압박으로 크래시할 수 있다. `drawHierarchy`
+    /// 자체(스티커 스냅샷)만 메인 스레드에서 짧게 캡처하고, 나머지 합성·인코딩은
+    /// 백그라운드 큐로 넘긴다. PNG 대신 JPEG로 인코딩해 메모리 사용량과 최종
+    /// 파일 크기도 함께 줄인다.
+    ///
+    /// 완료 전 재호출은 진행 중인 작업을 그대로 두고 무시한다 — 저장 버튼을
+    /// 빠르게 여러 번 누르면 무거운 합성이 중복 실행되어 메모리 피크가
+    /// 배가되는 것을 막기 위함이다.
+    func renderCompositeImage(completion: @escaping (Data) -> Void) {
+        guard !isExportingImage else { return }
+
+        guard let baseImage = photoImageView.image,
+              stickerCanvas.bounds.width > 0, stickerCanvas.bounds.height > 0 else {
+            completion(legacyRenderCompositeImage())
+            return
+        }
+
+        let nativePixelSize = CGSize(
+            width: baseImage.size.width * baseImage.scale,
+            height: baseImage.size.height * baseImage.scale
+        )
+        let longSide = max(nativePixelSize.width, nativePixelSize.height)
+        let clampRatio = longSide > Self.maxExportDimension ? Self.maxExportDimension / longSide : 1
+        let outputSize = CGSize(
+            width: nativePixelSize.width * clampRatio,
+            height: nativePixelSize.height * clampRatio
+        )
+        // 손상된 이미지 등으로 크기가 0이 되는 극단적인 경우, 0 크기 렌더러를
+        // 만들면 크래시하므로 방어적으로 대체 경로를 탄다.
+        guard outputSize.width > 0, outputSize.height > 0 else {
+            completion(legacyRenderCompositeImage())
+            return
+        }
+
+        let canvasSize = stickerCanvas.bounds.size
+        let stickerScale = min(outputSize.width / canvasSize.width, outputSize.height / canvasSize.height)
+
+        // 스티커가 없으면 스냅샷 자체를 생략해 불필요한 대형 비트맵 할당을 피한다.
+        var stickerImage: UIImage?
+        if !stickerCanvas.subviews.isEmpty {
+            let stickerFormat = UIGraphicsImageRendererFormat()
+            stickerFormat.opaque = false
+            stickerFormat.scale = stickerScale
+            let stickerRenderer = UIGraphicsImageRenderer(bounds: stickerCanvas.bounds, format: stickerFormat)
+            // drawHierarchy는 UIKit 뷰 상태에 접근하므로 반드시 메인 스레드에서 호출한다.
+            stickerImage = stickerRenderer.image { _ in
+                stickerCanvas.drawHierarchy(in: stickerCanvas.bounds, afterScreenUpdates: true)
+            }
+        }
+
+        isExportingImage = true
+        setExportControlsEnabled(false)
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let data: Data = autoreleasepool {
+                let format = UIGraphicsImageRendererFormat()
+                format.opaque = true
+                // outputSize는 이미 "최종 픽셀 크기"로 계산해뒀으므로, scale을 명시적으로
+                // 1로 고정해야 한다. 그렇지 않으면 기기 화면 배율(예: 3x)이 한 번 더
+                // 곱해져 의도한 것보다 훨씬 큰(그리고 훨씬 무거운) 이미지가 만들어진다.
+                format.scale = 1
+                let renderer = UIGraphicsImageRenderer(size: outputSize, format: format)
+                // renderer.image{}.jpegData(...) 는 완성된 UIImage/CGImage 사본을 한 번 더
+                // 만든 뒤에야 인코딩하므로, 원본 해상도 버퍼가 순간적으로 하나 더 늘어난다.
+                // jpegData(withCompressionQuality:actions:)를 쓰면 컨텍스트에서 바로
+                // 인코딩해 그 중복 사본을 없앨 수 있다.
+                return renderer.jpegData(withCompressionQuality: 0.92) { ctx in
+                    // 원본보다 축소해서 그리는 경우가 많으므로, 리샘플링 품질을 최대로 지정한다.
+                    ctx.cgContext.interpolationQuality = .high
+                    baseImage.draw(in: CGRect(origin: .zero, size: outputSize))
+                    stickerImage?.draw(in: CGRect(origin: .zero, size: outputSize))
+                }
+            }
+            DispatchQueue.main.async {
+                guard let self else {
+                    completion(data)
+                    return
+                }
+                self.isExportingImage = false
+                self.setExportControlsEnabled(true)
+                completion(data)
+            }
+        }
+    }
+
+    /// 저장/공유 진행 중 버튼을 비활성화하고, 저장 버튼에는 로딩 스피너를 보여준다.
+    private func setExportControlsEnabled(_ enabled: Bool) {
+        saveButton.isEnabled = enabled
+        shareButton.isEnabled = enabled
+        shareButton.alpha = enabled ? 1 : 0.5
+
+        var config = saveButton.configuration
+        config?.showsActivityIndicator = !enabled
+        saveButton.configuration = config
+    }
+
+    /// photoImageView에 이미지가 없는 등 예외 상황을 위한 대체 경로.
+    private func legacyRenderCompositeImage() -> Data {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false
+        format.scale = traitCollection.displayScale
         let renderer = UIGraphicsImageRenderer(bounds: stickerCanvas.bounds, format: format)
         return renderer.pngData { _ in
             let offsetRect = CGRect(

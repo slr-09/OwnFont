@@ -61,9 +61,17 @@ final class ToastManager {
 
         window.addSubview(toast)
 
+        // 탭바가 떠 있는 화면(대부분의 화면)에서는 탭바 위에 붙여 겹치지 않게 한다.
+        let visibleTabBar = (window.rootViewController as? UITabBarController)
+            .flatMap { $0.tabBar.isHidden ? nil : $0.tabBar }
+
         toast.snp.makeConstraints {
             $0.centerX.equalToSuperview()
-            $0.bottom.equalTo(window.safeAreaLayoutGuide.snp.bottom).offset(-24)
+            if let visibleTabBar {
+                $0.bottom.equalTo(visibleTabBar.snp.top).offset(-16)
+            } else {
+                $0.bottom.equalTo(window.safeAreaLayoutGuide.snp.bottom).offset(-24)
+            }
             $0.leading.greaterThanOrEqualToSuperview().offset(24)
             $0.trailing.lessThanOrEqualToSuperview().offset(-24)
         }

@@ -14,15 +14,15 @@ enum InstagramStoryShareService {
     /// 인스타그램 미설치 시 이동할 앱스토어 URL (Instagram App Store ID: 389801252)
     private static let appStoreURL = URL(string: "https://apps.apple.com/app/instagram/id389801252")
 
-    /// 편집된 이미지 PNG 데이터를 인스타그램 스토리로 공유한다.
+    /// 편집된 이미지 데이터(PNG 또는 JPEG)를 인스타그램 스토리로 공유한다.
     /// - Parameters:
-    ///   - pngData: 배경 스티커로 사용할 PNG 데이터
+    ///   - imageData: 배경 스티커로 사용할 이미지 데이터 (PNG/JPEG 모두 지원)
     ///   - topColor: 상단 그라데이션 색 (Instagram이 사용)
     ///   - bottomColor: 하단 그라데이션 색
     /// - Returns: 공유 시도 성공 여부. 인스타그램 미설치 시 앱스토어로 이동하고 false.
     @discardableResult
     static func share(
-        pngData: Data,
+        imageData: Data,
         topColor: UIColor = UIColor(hex: "FAFAFA"),
         bottomColor: UIColor = UIColor(hex: "FFFFFF")
     ) -> Bool {
@@ -37,7 +37,8 @@ enum InstagramStoryShareService {
         // 사진/메모지 우측 하단에 앱 브랜딩(로고 + 앱명)을 합성한 뒤 stickerImage 로 넘긴다.
         // 브랜딩을 스티커에 직접 그려두면, 사용자가 인스타에서 스티커를 옮겨도
         // 브랜딩이 사진을 따라다닌다. 배경은 기존처럼 그라데이션으로 채운다.
-        let stickerData = brandedSticker(from: pngData) ?? pngData
+        // (Instagram sticker는 PNG를 요구하므로 brandedSticker 내부에서 PNG로 재인코딩한다.)
+        let stickerData = brandedSticker(from: imageData) ?? imageData
         let items: [String: Any] = [
             "com.instagram.sharedSticker.stickerImage": stickerData,
             "com.instagram.sharedSticker.backgroundTopColor": topColor.hexString,
@@ -57,8 +58,8 @@ enum InstagramStoryShareService {
 
     /// 원본 사진/메모지 PNG 아래에 여백을 덧대고, 그 우측 하단(= 사진 바깥)에
     /// 앱 로고 + 앱명을 합성한 스티커를 만든다.
-    private static func brandedSticker(from pngData: Data) -> Data? {
-        guard let base = UIImage(data: pngData) else { return nil }
+    private static func brandedSticker(from imageData: Data) -> Data? {
+        guard let base = UIImage(data: imageData) else { return nil }
 
         let baseSize = base.size
 
