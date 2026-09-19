@@ -243,28 +243,32 @@ final class CardHomeViewController: UIViewController {
 
 extension CardHomeViewController: PHPickerViewControllerDelegate {
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-        picker.dismiss(animated: true)
-        guard let provider = results.first?.itemProvider,
-              provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) else {
-            ToastManager.show(L.toastPhotoLoadFailed, style: .error)
-            return
-        }
-
-        // loadObject(ofClass: UIImage.self)는 원본 대신 저해상도 프록시 이미지를
-        // 반환할 수 있어, Apple 권장 방식대로 원본 파일을 직접 읽어 화질 저하를 방지한다.
-        // iCloud 원본 다운로드 실패 등으로 실패할 수 있으므로 실패 시 토스트로 안내한다.
-        provider.loadFileRepresentation(forTypeIdentifier: UTType.image.identifier) { [weak self] url, _ in
-            guard let url,
-                  let data = try? Data(contentsOf: url),
-                  let image = UIImage(data: data) else {
-                DispatchQueue.main.async {
-                    ToastManager.show(L.toastPhotoLoadFailed, style: .error)
-                }
+        // dismiss 애니메이션이 끝나기 전에 토스트를 띄우면 탭바가 window 계층에
+        // 아직 재편입되지 않아 SnapKit 제약이 공통 조상을 찾지 못해 크래시한다.
+        // 반드시 dismiss 완료 후에 후속 처리를 진행한다.
+        picker.dismiss(animated: true) { [weak self] in
+            guard let provider = results.first?.itemProvider,
+                  provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) else {
+                ToastManager.show(L.toastPhotoLoadFailed, style: .error)
                 return
             }
-            DispatchQueue.main.async {
-                let vc = PhotoDecorateViewController(photo: image)
-                self?.navigationController?.pushViewController(vc, animated: true)
+
+            // loadObject(ofClass: UIImage.self)는 원본 대신 저해상도 프록시 이미지를
+            // 반환할 수 있어, Apple 권장 방식대로 원본 파일을 직접 읽어 화질 저하를 방지한다.
+            // iCloud 원본 다운로드 실패 등으로 실패할 수 있으므로 실패 시 토스트로 안내한다.
+            provider.loadFileRepresentation(forTypeIdentifier: UTType.image.identifier) { [weak self] url, _ in
+                guard let url,
+                      let data = try? Data(contentsOf: url),
+                      let image = UIImage(data: data) else {
+                    DispatchQueue.main.async {
+                        ToastManager.show(L.toastPhotoLoadFailed, style: .error)
+                    }
+                    return
+                }
+                DispatchQueue.main.async {
+                    let vc = PhotoDecorateViewController(photo: image)
+                    self?.navigationController?.pushViewController(vc, animated: true)
+                }
             }
         }
     }
