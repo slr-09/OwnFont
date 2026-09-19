@@ -134,11 +134,18 @@ final class CharacterCanvasView: UIView {
     /// 돌지 않게 한다.
     private func attachCanvasIfNeeded() {
         guard !isCanvasAttached else { return }
+        // insertSubview가 canvasView를 창에 붙이는 순간 PencilKit 내부에서
+        // didMoveToWindow -> 제스처 인식기 등록이 이어지며 이 뷰 트리에 대해
+        // hitTest가 한 번 더(재진입) 호출될 수 있다. 그때 isCanvasAttached가
+        // 아직 false면 hitTest가 onTouchWhileDetached를 또 호출해 이 함수가
+        // 완전히 붙기도 전에 재귀 실행되어 SnapKit이 아직 superview가 없는
+        // 상태의 제약을 걸다가 크래시한다. 삽입 전에 미리 true로 세팅해
+        // 재진입 시 hitTest가 곧바로 무시하도록 막는다.
+        isCanvasAttached = true
         insertSubview(canvasView, belowSubview: previewImageView)
         canvasView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
-        isCanvasAttached = true
     }
 
     private func detachCanvasIfNeeded() {
