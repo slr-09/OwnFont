@@ -24,6 +24,9 @@ final class CharacterCanvasView: UIView {
     private var previewDrawing: PKDrawing?
     private var lastPreviewSize: CGSize = .zero
     private var isCanvasAttached = false
+    /// 어떤 셀이든 캔버스를 붙이는 중인지 여부. 인스턴스 단위 플래그로는
+    /// 붙이는 도중 다른 셀의 hitTest가 들어오는 재진입을 막지 못한다.
+    private static var isAttachingAnyCanvas = false
 
     /// 캔버스가 분리된 상태에서 이 뷰 영역에 터치가 처음 닿았을 때 호출된다.
     /// (예: 포커스 없는 셀을 탭 없이 바로 펜슬로 긋기 시작하는 경우)
@@ -83,7 +86,7 @@ final class CharacterCanvasView: UIView {
     /// 터치가 실제로 라우팅되기 전(hitTest)에 캔버스를 동기적으로 붙여
     /// 같은 터치가 바로 캔버스로 전달되도록 한다.
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        if !isCanvasAttached, bounds.contains(point) {
+        if !isCanvasAttached, !Self.isAttachingAnyCanvas, bounds.contains(point) {
             onTouchWhileDetached?()
         }
         return super.hitTest(point, with: event)
@@ -133,7 +136,9 @@ final class CharacterCanvasView: UIView {
     /// bad_alloc 크래시로 이어진다. 포커스를 잃으면 즉시 떼어내 layoutSubviews 자체가
     /// 돌지 않게 한다.
     private func attachCanvasIfNeeded() {
-        guard !isCanvasAttached else { return }
+        guard !isCanvasAttached, !Self.isAttachingAnyCanvas else { return }
+        Self.isAttachingAnyCanvas = true
+        defer { Self.isAttachingAnyCanvas = false }
         // insertSubview가 canvasView를 창에 붙이는 순간 PencilKit 내부에서
         // didMoveToWindow -> 제스처 인식기 등록이 이어지며 이 뷰 트리에 대해
         // hitTest가 한 번 더(재진입) 호출될 수 있다. 그때 isCanvasAttached가
@@ -143,6 +148,10 @@ final class CharacterCanvasView: UIView {
         // 재진입 시 hitTest가 곧바로 무시하도록 막는다.
         isCanvasAttached = true
         insertSubview(canvasView, belowSubview: previewImageView)
+        guard canvasView.superview === self else {
+            isCanvasAttached = false
+            return
+        }
         canvasView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
