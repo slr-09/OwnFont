@@ -62,8 +62,14 @@ final class ToastManager {
         window.addSubview(toast)
 
         // 탭바가 떠 있는 화면(대부분의 화면)에서는 탭바 위에 붙여 겹치지 않게 한다.
+        // 사진 로드 완료처럼 비동기 콜백에서 호출되는 경우, 그 사이 화면 전환 등으로
+        // 탭바가 이 window에서 일시적으로 빠져 있을 수 있다(예: 아직 window에 재편입되지
+        // 않은 상태). 이때 tabBar를 기준으로 제약을 걸면 toast(window의 subview)와
+        // 공통 조상을 찾지 못해 크래시하므로, 실제로 같은 window에 붙어 있을 때만
+        // 탭바를 기준으로 사용한다.
         let visibleTabBar = (window.rootViewController as? UITabBarController)
             .flatMap { $0.tabBar.isHidden ? nil : $0.tabBar }
+            .flatMap { $0.window === window ? $0 : nil }
 
         toast.snp.makeConstraints {
             $0.centerX.equalToSuperview()
